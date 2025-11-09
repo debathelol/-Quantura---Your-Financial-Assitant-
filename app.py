@@ -14,6 +14,7 @@ from sklearn.linear_model import LinearRegression
 import psycopg2
 import os
 from datetime import datetime
+from ui_components.charts import fig_to_png_download
 
 def get_db_connection():
     return psycopg2.connect(os.environ.get('DATABASE_URL'))
@@ -1036,6 +1037,14 @@ if uploaded_files:
                 ax.set_title('Revenue Growth Over Time')
                 ax.grid(True, alpha=0.3)
                 st.pyplot(fig)
+                
+                st.download_button(
+                    label="📥 Download Chart as PNG",
+                    data=fig_to_png_download(fig, "revenue_growth"),
+                    file_name="revenue_growth.png",
+                    mime="image/png",
+                    key="download_revenue_chart"
+                )
                 plt.close(fig)
                 
                 # Income vs Revenue comparison
@@ -1055,6 +1064,14 @@ if uploaded_files:
                     ax.legend()
                     ax.grid(True, alpha=0.3, axis='y')
                     st.pyplot(fig)
+                    
+                    st.download_button(
+                        label="📥 Download Chart as PNG",
+                        data=fig_to_png_download(fig, "revenue_income_comparison"),
+                        file_name="revenue_income_comparison.png",
+                        mime="image/png",
+                        key="download_income_chart"
+                    )
                     plt.close(fig)
         
         with tab2:
@@ -1067,6 +1084,14 @@ if uploaded_files:
                 ax.set_title('Employee Growth Over Time')
                 ax.grid(True, alpha=0.3)
                 st.pyplot(fig)
+                
+                st.download_button(
+                    label="📥 Download Chart as PNG",
+                    data=fig_to_png_download(fig, "employee_growth"),
+                    file_name="employee_growth.png",
+                    mime="image/png",
+                    key="download_employees_chart"
+                )
                 plt.close(fig)
                 
                 # Growth rate
@@ -1209,6 +1234,14 @@ if uploaded_files:
                         ax.pie(subcategories.values, labels=subcategories.index, autopct='%1.1f%%', startangle=90)
                         ax.set_title('Expense Distribution by Subcategory')
                         st.pyplot(fig)
+                        
+                        st.download_button(
+                            label="📥 Download Chart",
+                            data=fig_to_png_download(fig, "expense_distribution"),
+                            file_name="expense_distribution.png",
+                            mime="image/png",
+                            key="download_expense_pie"
+                        )
                         plt.close(fig)
                     
                     with col_pie2:
@@ -1250,6 +1283,14 @@ if uploaded_files:
                 ax.set_xlabel('Season')
                 plt.xticks(rotation=45)
                 st.pyplot(fig)
+                
+                st.download_button(
+                    label="📥 Download Chart",
+                    data=fig_to_png_download(fig, "seasonal_expenses"),
+                    file_name="seasonal_expenses.png",
+                    mime="image/png",
+                    key="download_seasonal_chart"
+                )
                 plt.close(fig)
                 
                 st.write("**Seasonal Breakdown:**")
