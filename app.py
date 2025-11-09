@@ -3,10 +3,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.graph_objects as go
+import plotly.express as px
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+from reportlab.lib.units import inch
 import re
 from io import BytesIO
 import base64
@@ -259,6 +262,149 @@ def analyze_corporate_data(df):
         'marketcap_col': marketcap_col,
         'employees_col': employees_col
     }
+
+def calculate_financial_ratios(df, col_info):
+    """Calculate key financial ratios for corporate data"""
+    ratios = {}
+    
+    if col_info['revenue_col'] and col_info['income_col']:
+        latest_revenue = df[col_info['revenue_col']].iloc[-1]
+        latest_income = df[col_info['income_col']].iloc[-1]
+        if latest_revenue > 0:
+            ratios['Profit Margin (%)'] = round((latest_income / latest_revenue) * 100, 2)
+    
+    if col_info['revenue_col'] and col_info['employees_col']:
+        latest_revenue = df[col_info['revenue_col']].iloc[-1]
+        latest_employees = df[col_info['employees_col']].iloc[-1]
+        if latest_employees > 0:
+            ratios['Revenue per Employee ($B)'] = round(latest_revenue / latest_employees, 4)
+    
+    if col_info['revenue_col'] and len(df) > 1:
+        latest_revenue = df[col_info['revenue_col']].iloc[-1]
+        previous_revenue = df[col_info['revenue_col']].iloc[-2]
+        if previous_revenue > 0:
+            ratios['Revenue Growth (%)'] = round(((latest_revenue - previous_revenue) / previous_revenue) * 100, 2)
+    
+    if col_info['employees_col'] and len(df) > 1:
+        latest_employees = df[col_info['employees_col']].iloc[-1]
+        previous_employees = df[col_info['employees_col']].iloc[-2]
+        if previous_employees > 0:
+            ratios['Employee Growth (%)'] = round(((latest_employees - previous_employees) / previous_employees) * 100, 2)
+    
+    return ratios
+
+def build_company_comparison(all_dfs):
+    """Build comparison dataframe for multiple companies"""
+    comparison_data = []
+    
+    for df in all_dfs:
+        if 'Source' not in df.columns or df.empty:
+            continue
+            
+        company_name = df['Source'].iloc[0] if 'Source' in df.columns else "Unknown"
+        col_info = analyze_corporate_data(df)
+        
+        company_metrics = {'Company': company_name}
+        
+        # Latest year
+        if col_info['year_col']:
+            company_metrics['Latest Year'] = df[col_info['year_col']].iloc[-1]
+        
+        # Revenue
+        if col_info['revenue_col']:
+            company_metrics['Revenue ($B)'] = round(df[col_info['revenue_col']].iloc[-1], 2)
+        
+        # Net Income
+        if col_info['income_col']:
+            company_metrics['Net Income ($B)'] = round(df[col_info['income_col']].iloc[-1], 2)
+        
+        # Employees
+        if col_info['employees_col']:
+            company_metrics['Employees'] = int(df[col_info['employees_col']].iloc[-1])
+        
+        # Financial Ratios
+        ratios = calculate_financial_ratios(df, col_info)
+        company_metrics.update(ratios)
+        
+        comparison_data.append(company_metrics)
+    
+    return pd.DataFrame(comparison_data)
+
+def generate_corporate_pdf(df, col_info):
+    """Generate PDF report for corporate data"""
+    pdf_buffer = BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    company_name = df['Source'].iloc[0] if 'Source' in df.columns else "Corporate Report"
+    
+    story.append(Paragraph(f"Corporate Financial Report: {company_name}", styles['Title']))
+    story.append(Spacer(1, 12))
+    
+    # Latest metrics
+    latest_year = df[col_info['year_col']].iloc[-1] if col_info['year_col'] else "N/A"
+    latest_revenue = df[col_info['revenue_col']].iloc[-1] if col_info['revenue_col'] else 0
+    latest_income = df[col_info['income_col']].iloc[-1] if col_info['income_col'] else 0
+    latest_employees = df[col_info['employees_col']].iloc[-1] if col_info['employees_col'] else 0
+    
+    story.append(Paragraph(f"Latest Year: {latest_year}", styles['Heading2']))
+    story.append(Spacer(1, 6))
+    
+    metrics_data = [['Metric', 'Value']]
+    if col_info['revenue_col']:
+        metrics_data.append(['Revenue', f"${latest_revenue:.2f}B"])
+    if col_info['income_col']:
+        metrics_data.append(['Net Income', f"${latest_income:.2f}B"])
+    if col_info['employees_col']:
+        metrics_data.append(['Employees', f"{int(latest_employees):,}"])
+    
+    # Add financial ratios
+    ratios = calculate_financial_ratios(df, col_info)
+    for ratio_name, ratio_value in ratios.items():
+        metrics_data.append([ratio_name, str(ratio_value)])
+    
+    table = Table(metrics_data)
+    table.setStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ])
+    story.append(table)
+    story.append(Spacer(1, 20))
+    
+    # Add Revenue Trend Chart
+    if col_info['year_col'] and col_info['revenue_col']:
+        story.append(Paragraph("Revenue Trend", styles['Heading2']))
+        story.append(Spacer(1, 6))
+        
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot(df[col_info['year_col']], df[col_info['revenue_col']], 
+                marker='o', linewidth=2, color='#6366f1')
+        ax.set_xlabel('Year')
+        ax.set_ylabel('Revenue (USD Billion)')
+        ax.set_title('Revenue Growth Over Time')
+        ax.grid(True, alpha=0.3)
+        
+        # Save chart to buffer
+        chart_buffer = BytesIO()
+        plt.tight_layout()
+        plt.savefig(chart_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.close(fig)
+        chart_buffer.seek(0)
+        
+        # Add chart to PDF
+        img = RLImage(chart_buffer, width=5*inch, height=3.5*inch)
+        story.append(img)
+    
+    doc.build(story)
+    pdf_buffer.seek(0)
+    return pdf_buffer
 
 def analyze_finances(df, date_range=None):
     df_filtered = df.copy()
@@ -1109,6 +1255,19 @@ if uploaded_files:
             st.subheader("🏢 Corporate Overview")
             st.dataframe(combined_df, use_container_width=True)
             
+            # Corporate PDF Download
+            st.subheader("📄 Download Report")
+            corporate_pdf = generate_corporate_pdf(combined_df, col_info)
+            st.download_button(
+                label="📥 Download Corporate PDF Report",
+                data=corporate_pdf,
+                file_name=f"corporate_report_{combined_df['Source'].iloc[0] if 'Source' in combined_df.columns else 'report'}.pdf",
+                mime="application/pdf",
+                key="corporate_pdf_download"
+            )
+            
+            st.divider()
+            
             if col_info['year_col'] and col_info['revenue_col']:
                 col1, col2, col3 = st.columns(3)
                 
@@ -1193,20 +1352,65 @@ if uploaded_files:
                 )
                 plt.close(fig)
                 
-                # Growth rate
-                st.subheader("📊 Growth Metrics")
-                for i in range(1, len(combined_df)):
-                    year_prev = combined_df[col_info['year_col']].iloc[i-1]
-                    year_curr = combined_df[col_info['year_col']].iloc[i]
-                    emp_prev = combined_df[col_info['employees_col']].iloc[i-1]
-                    emp_curr = combined_df[col_info['employees_col']].iloc[i]
-                    growth = ((emp_curr - emp_prev) / emp_prev * 100) if emp_prev > 0 else 0
-                    st.metric(f"{year_prev} → {year_curr}", f"{emp_curr:,} employees", f"{growth:+.1f}%")
+                # Financial Ratios Section
+                st.divider()
+                st.subheader("📊 Financial Ratios")
+                ratios = calculate_financial_ratios(combined_df, col_info)
+                
+                if ratios:
+                    ratio_cols = st.columns(len(ratios))
+                    for idx, (ratio_name, ratio_value) in enumerate(ratios.items()):
+                        with ratio_cols[idx]:
+                            st.metric(ratio_name, f"{ratio_value}")
+                else:
+                    st.info("Insufficient data for ratio calculations")
             else:
                 st.info("Employee data not available")
         
         with tab3:
-            st.info("Year-over-year comparison available for transaction data only")
+            # Company Comparison Tab - only show if multiple corporate files uploaded
+            if len(all_dfs) > 1 and all('data_type' in df.columns and df['data_type'].iloc[0] == 'corporate' for df in all_dfs):
+                st.subheader("🏆 Multi-Company Comparison")
+                
+                comparison_df = build_company_comparison(all_dfs)
+                
+                if not comparison_df.empty:
+                    st.write("**Side-by-Side Metrics:**")
+                    st.dataframe(comparison_df, use_container_width=True)
+                    
+                    # Comparison chart - Revenue trends (INTERACTIVE PLOTLY)
+                    st.divider()
+                    st.write("**Interactive Revenue Comparison:**")
+                    st.caption("💡 Hover to see exact values, click legend to hide/show companies, zoom and pan")
+                    
+                    fig_plotly = go.Figure()
+                    for df in all_dfs:
+                        if 'Source' in df.columns:
+                            company_name = df['Source'].iloc[0]
+                            col_info_temp = analyze_corporate_data(df)
+                            if col_info_temp['year_col'] and col_info_temp['revenue_col']:
+                                fig_plotly.add_trace(go.Scatter(
+                                    x=df[col_info_temp['year_col']],
+                                    y=df[col_info_temp['revenue_col']],
+                                    mode='lines+markers',
+                                    name=company_name,
+                                    hovertemplate='<b>%{fullData.name}</b><br>Year: %{x}<br>Revenue: $%{y:.2f}B<extra></extra>'
+                                ))
+                    
+                    fig_plotly.update_layout(
+                        title='Revenue Comparison Across Companies',
+                        xaxis_title='Year',
+                        yaxis_title='Revenue (USD Billion)',
+                        hovermode='x unified',
+                        template='plotly_white',
+                        height=500
+                    )
+                    
+                    st.plotly_chart(fig_plotly, use_container_width=True)
+                else:
+                    st.warning("Unable to generate comparison data")
+            else:
+                st.info("Upload multiple corporate data files to enable company comparison")
         
         with tab4:
             st.info("Seasonal trends available for transaction data only")
