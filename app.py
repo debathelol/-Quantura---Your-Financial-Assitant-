@@ -819,6 +819,64 @@ st.markdown("""
         animation: slideInFromLeft 0.4s ease-out;
     }
     
+    /* Sidebar Styling with Beautiful Gradient */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, 
+            #1e3a8a 0%,      /* Deep blue */
+            #312e81 35%,     /* Indigo */
+            #581c87 70%,     /* Purple */
+            #831843 100%     /* Dark magenta */
+        );
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    section[data-testid="stSidebar"] > div {
+        background: transparent;
+    }
+    
+    /* Sidebar text colors */
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] .stMarkdown {
+        color: #ffffff !important;
+    }
+    
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label {
+        color: #e0e7ff !important;
+    }
+    
+    /* Sidebar dividers */
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Sidebar buttons */
+    section[data-testid="stSidebar"] button {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    section[data-testid="stSidebar"] button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    /* Sidebar checkbox */
+    section[data-testid="stSidebar"] [data-testid="stCheckbox"] label {
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+    
+    /* Sidebar caption text */
+    section[data-testid="stSidebar"] .stCaption {
+        color: #c7d2fe !important;
+    }
+    
     .main-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #ec4899 100%);
         padding: 3rem 2rem;
