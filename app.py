@@ -92,6 +92,63 @@ def set_budget(category, amount):
     except Exception as e:
         return False, str(e)
 
+def get_savings_goals():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, goal_name, target_amount, current_amount, deadline, created_at 
+            FROM savings_goals ORDER BY created_at DESC
+        """)
+        goals = cur.fetchall()
+        cur.close()
+        conn.close()
+        return goals
+    except Exception as e:
+        st.error(f"Database error loading savings goals: {str(e)}")
+        return []
+
+def add_savings_goal(goal_name, target_amount, current_amount, deadline):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO savings_goals (goal_name, target_amount, current_amount, deadline) 
+            VALUES (%s, %s, %s, %s)
+        """, (goal_name, target_amount, current_amount, deadline))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def update_savings_goal(goal_id, current_amount):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE savings_goals SET current_amount = %s WHERE id = %s
+        """, (current_amount, goal_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def delete_savings_goal(goal_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM savings_goals WHERE id = %s", (goal_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
 def detect_data_type(df):
     """Detect if data is personal finance transactions or corporate overview"""
     columns_lower = [col.lower() for col in df.columns]
@@ -1322,3 +1379,93 @@ if uploaded_files:
                         st.write(f"Next: {row['Next Expected'].strftime('%Y-%m-%d')}")
             else:
                 st.info("No recurring transactions detected yet. Upload more data with regular payments!")
+        
+        # Savings Goals Tracker
+        st.divider()
+        st.subheader("🎯 Savings Goals Tracker")
+        
+        col_goals1, col_goals2 = st.columns([2, 1])
+        
+        with col_goals1:
+            st.write("**Your Savings Goals:**")
+            savings_goals = get_savings_goals()
+            
+            if savings_goals:
+                for goal in savings_goals:
+                    goal_id, goal_name, target, current, deadline, created_at = goal
+                    target = float(target)
+                    current = float(current)
+                    progress_pct = (current / target * 100) if target > 0 else 0
+                    remaining = target - current
+                    
+                    with st.container():
+                        st.write(f"**{goal_name}**")
+                        
+                        goal_col1, goal_col2, goal_col3 = st.columns([2, 1, 1])
+                        
+                        with goal_col1:
+                            st.progress(min(progress_pct / 100, 1.0))
+                            st.write(f"${current:,.2f} of ${target:,.2f} ({progress_pct:.1f}%)")
+                        
+                        with goal_col2:
+                            if deadline:
+                                days_left = (deadline - datetime.now().date()).days
+                                if days_left > 0 and remaining > 0:
+                                    monthly_needed = remaining / (days_left / 30)
+                                    st.metric("Monthly Needed", f"${monthly_needed:,.0f}")
+                                    st.caption(f"{days_left} days left")
+                                elif progress_pct >= 100:
+                                    st.success("✅ Completed!")
+                                else:
+                                    st.warning("⚠️ Overdue")
+                            else:
+                                st.caption("No deadline set")
+                        
+                        with goal_col3:
+                            new_amount = st.number_input(
+                                "Update Progress",
+                                min_value=0.0,
+                                value=current,
+                                step=10.0,
+                                key=f"goal_{goal_id}"
+                            )
+                            if st.button("Update", key=f"update_{goal_id}"):
+                                success, error = update_savings_goal(goal_id, new_amount)
+                                if success:
+                                    st.success("Updated!")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Error: {error}")
+                            
+                            if st.button("🗑️ Delete", key=f"delete_{goal_id}"):
+                                success, error = delete_savings_goal(goal_id)
+                                if success:
+                                    st.success("Deleted!")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Error: {error}")
+                        
+                        st.divider()
+            else:
+                st.info("No savings goals yet. Add one to get started!")
+        
+        with col_goals2:
+            st.write("**Add New Goal:**")
+            with st.form("add_goal_form"):
+                new_goal_name = st.text_input("Goal Name", placeholder="e.g., Emergency Fund")
+                new_target = st.number_input("Target Amount ($)", min_value=0.0, value=1000.0, step=100.0)
+                new_current = st.number_input("Current Amount ($)", min_value=0.0, value=0.0, step=100.0)
+                new_deadline = st.date_input("Deadline (optional)")
+                
+                submitted = st.form_submit_button("Add Goal")
+                
+            if submitted:
+                if new_goal_name:
+                    success, error = add_savings_goal(new_goal_name, new_target, new_current, new_deadline)
+                    if success:
+                        st.success(f"Added goal: {new_goal_name}!")
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {error}")
+                else:
+                    st.warning("Please enter a goal name")
