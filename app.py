@@ -2610,6 +2610,301 @@ if st.session_state.show_financial_tools:
         else:
             st.warning("⚠️ Please enter your portfolio holdings to see analysis.")
     
+    # Rent vs Buy Calculator
+    with st.expander("🏠 Rent vs Buy Calculator - Make the Right Housing Decision", expanded=False):
+        st.markdown("**Should you rent or buy? Compare total costs and build a smart housing strategy!**")
+        
+        st.info("💡 **Key Insight**: Buying isn't always better! It depends on home prices, rent costs, how long you'll stay, and opportunity costs.")
+        
+        # Analysis period
+        analysis_years = st.slider("📅 Analysis Period (years)", min_value=1, max_value=30, value=10, step=1,
+                                   help="How many years do you plan to stay in this area?")
+        
+        # Two columns for rent vs buy inputs
+        rent_col, buy_col = st.columns(2)
+        
+        with rent_col:
+            st.markdown("### 🏢 Renting Scenario")
+            monthly_rent = st.number_input("💵 Monthly Rent ($)", min_value=0.0, value=2000.0, step=100.0)
+            annual_rent_increase = st.slider("📈 Annual Rent Increase (%)", 0.0, 10.0, 3.0, 0.5)
+            renters_insurance = st.number_input("🛡️ Renter's Insurance ($/month)", min_value=0.0, value=20.0, step=5.0)
+            upfront_rent_costs = st.number_input("💰 Upfront Costs (security deposit, moving)", min_value=0.0, value=3000.0, step=500.0)
+        
+        with buy_col:
+            st.markdown("### 🏠 Buying Scenario")
+            home_price = st.number_input("🏡 Home Price ($)", min_value=0.0, value=400000.0, step=10000.0)
+            down_payment_pct = st.slider("💰 Down Payment (%)", 0, 50, 20, 5)
+            mortgage_rate = st.slider("📊 Mortgage Interest Rate (%)", 0.0, 10.0, 6.5, 0.25)
+            loan_term_years = st.selectbox("⏰ Loan Term (years)", [15, 20, 30], index=2)
+            
+            property_tax_rate = st.slider("🏛️ Property Tax Rate (% of home value)", 0.0, 3.0, 1.2, 0.1)
+            hoa_fees = st.number_input("🏘️ HOA Fees ($/month)", min_value=0.0, value=100.0, step=50.0)
+            home_insurance = st.number_input("🛡️ Home Insurance ($/month)", min_value=0.0, value=150.0, step=25.0)
+            maintenance_pct = st.slider("🔧 Maintenance (% of home value/year)", 0.0, 3.0, 1.0, 0.25)
+            closing_costs_pct = st.slider("📄 Closing Costs (%)", 0.0, 5.0, 2.5, 0.5)
+            home_appreciation = st.slider("📈 Annual Home Appreciation (%)", -5.0, 10.0, 3.0, 0.5)
+        
+        # Investment return for opportunity cost
+        st.markdown("### 💼 Investment Assumptions")
+        investment_return = st.slider("📈 Expected Investment Return (% annual)", 0.0, 15.0, 7.0, 0.5,
+                                      help="If renting, what return could you earn by investing the difference?")
+        
+        # Calculate buying costs
+        down_payment = home_price * (down_payment_pct / 100)
+        loan_amount = home_price - down_payment
+        closing_costs = home_price * (closing_costs_pct / 100)
+        
+        # Monthly mortgage payment (P&I)
+        if mortgage_rate > 0 and loan_amount > 0:
+            monthly_rate = mortgage_rate / (12 * 100)
+            num_payments = loan_term_years * 12
+            monthly_mortgage = loan_amount * (monthly_rate * (1 + monthly_rate)**num_payments) / ((1 + monthly_rate)**num_payments - 1)
+        else:
+            monthly_mortgage = loan_amount / (loan_term_years * 12) if loan_term_years > 0 else 0
+        
+        # Display initial costs comparison
+        st.markdown("### 💰 Initial Costs Comparison")
+        init_col1, init_col2 = st.columns(2)
+        
+        with init_col1:
+            st.metric("🏢 Renting - Upfront", f"${upfront_rent_costs:,.0f}")
+        with init_col2:
+            total_upfront_buy = down_payment + closing_costs
+            st.metric("🏠 Buying - Upfront", f"${total_upfront_buy:,.0f}", 
+                     delta=f"${total_upfront_buy - upfront_rent_costs:,.0f} more than renting")
+        
+        # Year-by-year simulation
+        years_array = list(range(analysis_years + 1))
+        
+        # Renting costs over time
+        cumulative_rent_cost = [upfront_rent_costs]
+        rent_investment_value = [0]  # What if you invested the down payment difference
+        current_rent = monthly_rent
+        
+        for year in range(1, analysis_years + 1):
+            # Annual rent cost
+            annual_rent = current_rent * 12 + renters_insurance * 12
+            cumulative_rent_cost.append(cumulative_rent_cost[-1] + annual_rent)
+            
+            # Opportunity cost: invest down payment + ongoing savings
+            if year == 1:
+                invested = total_upfront_buy - upfront_rent_costs
+            else:
+                invested = rent_investment_value[-1] * (1 + investment_return/100)
+            rent_investment_value.append(invested)
+            
+            # Increase rent
+            current_rent = current_rent * (1 + annual_rent_increase / 100)
+        
+        # Buying costs over time
+        cumulative_buy_cost = [total_upfront_buy]
+        home_equity = [down_payment]
+        home_value_over_time = [home_price]
+        remaining_balance = loan_amount
+        
+        for year in range(1, analysis_years + 1):
+            # Monthly costs
+            property_tax_annual = home_value_over_time[-1] * (property_tax_rate / 100)
+            maintenance_annual = home_value_over_time[-1] * (maintenance_pct / 100)
+            insurance_annual = home_insurance * 12
+            hoa_annual = hoa_fees * 12
+            
+            # Principal and interest for the year
+            annual_mortgage_payment = monthly_mortgage * 12 if year <= loan_term_years else 0
+            
+            # Calculate principal and interest paid this year
+            if year <= loan_term_years and loan_amount > 0:
+                # Interest for the year (on declining balance)
+                annual_interest = remaining_balance * (mortgage_rate / 100)
+                principal_paid = annual_mortgage_payment - annual_interest
+                remaining_balance = max(0, remaining_balance - principal_paid)
+            else:
+                annual_interest = 0
+                principal_paid = 0
+            
+            # Total annual cost (ONLY true costs, NOT principal which builds equity)
+            annual_buy_cost = annual_interest + property_tax_annual + maintenance_annual + insurance_annual + hoa_annual
+            cumulative_buy_cost.append(cumulative_buy_cost[-1] + annual_buy_cost)
+            
+            # Home appreciation
+            new_home_value = home_value_over_time[-1] * (1 + home_appreciation / 100)
+            home_value_over_time.append(new_home_value)
+            
+            # Equity = home value - remaining mortgage
+            current_equity = new_home_value - remaining_balance
+            home_equity.append(current_equity)
+        
+        # Net worth comparison (rent + investments vs buy equity)
+        rent_net_worth = [rent_investment_value[i] - cumulative_rent_cost[i] for i in range(len(years_array))]
+        buy_net_worth = [home_equity[i] - cumulative_buy_cost[i] for i in range(len(years_array))]
+        
+        # Find break-even point
+        break_even_year = None
+        for year in range(len(years_array)):
+            if buy_net_worth[year] > rent_net_worth[year]:
+                break_even_year = year
+                break
+        
+        # Display verdict
+        st.markdown("### 🎯 Verdict")
+        
+        final_rent_cost = cumulative_rent_cost[-1]
+        final_buy_cost = cumulative_buy_cost[-1]
+        final_home_equity = home_equity[-1]
+        final_home_value = home_value_over_time[-1]
+        
+        # Net position after analysis period
+        rent_net_position = rent_investment_value[-1] - final_rent_cost
+        buy_net_position = final_home_equity - final_buy_cost
+        
+        if buy_net_position > rent_net_position:
+            advantage = buy_net_position - rent_net_position
+            st.success(f"🏠 **BUYING WINS!** After {analysis_years} years, buying gives you **${advantage:,.0f} more net worth** than renting!")
+        else:
+            advantage = rent_net_position - buy_net_position
+            st.warning(f"🏢 **RENTING WINS!** After {analysis_years} years, renting + investing saves you **${advantage:,.0f}** compared to buying!")
+        
+        # Key metrics
+        st.markdown("### 📊 Key Metrics")
+        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+        
+        with metric_col1:
+            st.metric("🏢 Total Rent Paid", f"${final_rent_cost:,.0f}")
+            st.metric("💼 Investments (if renting)", f"${rent_investment_value[-1]:,.0f}")
+        
+        with metric_col2:
+            st.metric("🏠 Total Buy Costs", f"${final_buy_cost:,.0f}")
+            st.metric("🏡 Home Equity Built", f"${final_home_equity:,.0f}")
+        
+        with metric_col3:
+            monthly_buy_cost_year1 = monthly_mortgage + (property_tax_rate/100 * home_price / 12) + home_insurance + hoa_fees + (maintenance_pct/100 * home_price / 12)
+            monthly_rent_cost_year1 = monthly_rent + renters_insurance
+            st.metric("💵 Monthly Cost (Rent)", f"${monthly_rent_cost_year1:,.0f}")
+            st.metric("💵 Monthly Cost (Buy)", f"${monthly_buy_cost_year1:,.0f}")
+        
+        with metric_col4:
+            st.metric("🏡 Home Value", f"${final_home_value:,.0f}", 
+                     delta=f"+${final_home_value - home_price:,.0f}")
+            if break_even_year:
+                st.metric("⚖️ Break-Even Point", f"{break_even_year} years")
+            else:
+                st.metric("⚖️ Break-Even Point", "Never" if buy_net_position < rent_net_position else "Immediate")
+        
+        # Visualization
+        st.markdown("### 📈 Net Worth Comparison Over Time")
+        
+        fig_rent_buy = go.Figure()
+        
+        # Rent net worth line
+        fig_rent_buy.add_trace(go.Scatter(
+            x=years_array,
+            y=rent_net_worth,
+            name='Renting + Investing',
+            line=dict(color='#3b82f6', width=3),
+            hovertemplate='<b>Year %{x}</b><br>Net Worth: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Buy net worth line
+        fig_rent_buy.add_trace(go.Scatter(
+            x=years_array,
+            y=buy_net_worth,
+            name='Buying (Home Equity)',
+            line=dict(color='#10b981', width=3),
+            hovertemplate='<b>Year %{x}</b><br>Net Worth: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Break-even point marker
+        if break_even_year and break_even_year < len(years_array):
+            fig_rent_buy.add_vline(
+                x=break_even_year,
+                line_dash="dash",
+                line_color="orange",
+                annotation_text=f"Break-Even: Year {break_even_year}",
+                annotation_position="top"
+            )
+        
+        fig_rent_buy.update_layout(
+            title=f'Net Worth: Renting vs Buying Over {analysis_years} Years',
+            xaxis_title='Years',
+            yaxis_title='Net Worth ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=450
+        )
+        
+        st.plotly_chart(fig_rent_buy, use_container_width=True)
+        
+        # Cost breakdown over time
+        st.markdown("### 💸 Cumulative Costs Over Time")
+        
+        fig_costs = go.Figure()
+        
+        fig_costs.add_trace(go.Scatter(
+            x=years_array,
+            y=cumulative_rent_cost,
+            name='Total Rent Costs',
+            fill='tozeroy',
+            line=dict(color='#3b82f6', width=2),
+            hovertemplate='<b>Year %{x}</b><br>Total: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_costs.add_trace(go.Scatter(
+            x=years_array,
+            y=cumulative_buy_cost,
+            name='Total Buy Costs',
+            fill='tozeroy',
+            line=dict(color='#10b981', width=2),
+            hovertemplate='<b>Year %{x}</b><br>Total: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_costs.update_layout(
+            title='Cumulative Costs Comparison',
+            xaxis_title='Years',
+            yaxis_title='Total Cost ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=400
+        )
+        
+        st.plotly_chart(fig_costs, use_container_width=True)
+        
+        # Smart Insights
+        st.markdown("### 💡 Smart Insights")
+        insight_col1, insight_col2 = st.columns(2)
+        
+        with insight_col1:
+            if buy_net_position > rent_net_position:
+                st.success(f"🏠 **Buying Advantage**: You'll build **${final_home_equity:,.0f}** in home equity!")
+                if break_even_year and break_even_year <= 5:
+                    st.info(f"⚡ **Quick Break-Even**: Buying becomes profitable in just {break_even_year} years!")
+                elif break_even_year:
+                    st.info(f"⏰ **Break-Even Timeline**: It takes {break_even_year} years for buying to beat renting.")
+            else:
+                st.success(f"🏢 **Renting Advantage**: Save **${advantage:,.0f}** by renting and investing!")
+                if monthly_rent_cost_year1 < monthly_buy_cost_year1:
+                    monthly_savings = monthly_buy_cost_year1 - monthly_rent_cost_year1
+                    st.info(f"💰 **Monthly Savings**: Renting saves ${monthly_savings:,.0f}/month you can invest!")
+        
+        with insight_col2:
+            # Opportunity cost analysis
+            if down_payment > 0:
+                investment_growth = (total_upfront_buy - upfront_rent_costs) * ((1 + investment_return/100) ** analysis_years)
+                st.metric("📊 If You Invested Down Payment", f"${investment_growth:,.0f}",
+                         help=f"${total_upfront_buy - upfront_rent_costs:,.0f} invested at {investment_return}% for {analysis_years} years")
+            
+            # Home appreciation insight
+            appreciation_gain = final_home_value - home_price
+            if appreciation_gain > 0:
+                st.success(f"📈 **Home Appreciation**: Your home gained **${appreciation_gain:,.0f}** in value!")
+            else:
+                st.warning(f"📉 **Home Depreciation**: Your home lost **${abs(appreciation_gain):,.0f}** in value.")
+            
+            # Flexibility consideration
+            if analysis_years < 5 and buy_net_position > rent_net_position:
+                st.warning("⚠️ **Short Timeline**: Buying has high upfront costs. Consider renting if you might move soon!")
+            elif analysis_years >= 10 and buy_net_position > rent_net_position:
+                st.success(f"🎯 **Long-Term Win**: With {analysis_years}+ years, buying builds significant wealth!")
+    
     st.markdown("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
