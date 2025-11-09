@@ -207,11 +207,74 @@ def load_and_categorize(uploaded_file, custom_rules=None, currency='USD'):
         return df
     
     # Personal finance data - validate and categorize
-    required_columns = ['Date', 'Description', 'Amount']
-    missing_columns = [col for col in required_columns if col not in df.columns]
+    # Smart column detection - handle variations like "Amount (USD)", "Amount (EUR)", etc.
+    # Prioritize exact matches first, then common variations
+    def find_date_column(columns):
+        # Exact matches first
+        exact_matches = ['Date', 'date', 'DATE', 'Transaction Date', 'Posted Date', 'Posting Date']
+        for col in columns:
+            if col in exact_matches:
+                return col
+        # Common patterns
+        for col in columns:
+            col_lower = col.lower()
+            if col_lower in ['date', 'transaction date', 'posted date', 'posting date', 'trans date']:
+                return col
+        # Fuzzy match (but must start with date or end with date)
+        for col in columns:
+            col_lower = col.lower()
+            if col_lower.startswith('date') or col_lower.endswith('date'):
+                return col
+        return None
     
-    if missing_columns:
-        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}. Your file has: {', '.join(df.columns.tolist())}. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns.")
+    def find_description_column(columns):
+        # Exact matches first
+        exact_matches = ['Description', 'description', 'DESCRIPTION', 'Desc', 'desc']
+        for col in columns:
+            if col in exact_matches:
+                return col
+        # Common patterns
+        for col in columns:
+            col_lower = col.lower()
+            if col_lower in ['description', 'desc', 'transaction description', 'memo', 'narrative']:
+                return col
+        # Fuzzy match
+        for col in columns:
+            col_lower = col.lower()
+            if 'description' in col_lower or 'desc' in col_lower:
+                return col
+        return None
+    
+    def find_amount_column(columns):
+        # Exact matches first
+        exact_matches = ['Amount', 'amount', 'AMOUNT']
+        for col in columns:
+            if col in exact_matches:
+                return col
+        # Common patterns with currency codes
+        for col in columns:
+            col_lower = col.lower()
+            if col_lower.startswith('amount'):
+                return col
+        return None
+    
+    date_col = find_date_column(df.columns)
+    desc_col = find_description_column(df.columns)
+    amount_col = find_amount_column(df.columns)
+    
+    # Rename columns to standard format
+    if date_col and desc_col and amount_col:
+        df = df.rename(columns={
+            date_col: 'Date',
+            desc_col: 'Description',
+            amount_col: 'Amount'
+        })
+    else:
+        missing = []
+        if not date_col: missing.append('Date')
+        if not desc_col: missing.append('Description')
+        if not amount_col: missing.append('Amount')
+        raise ValueError(f"Missing required columns: {', '.join(missing)}. Your file has: {', '.join(df.columns.tolist())}. Please ensure your CSV has columns containing 'Date', 'Description', and 'Amount'.")
     
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Date'])
