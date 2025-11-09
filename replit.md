@@ -11,6 +11,8 @@ Preferred communication style: Simple, everyday language.
 ## UI/UX Decisions
 The application uses Streamlit for its frontend, enabling rapid development of interactive data applications with a Python-native approach. The design prioritizes clarity and user-friendliness, featuring a tabbed interface for different analysis views and a customizable dashboard with smooth animations (slide-in, fade-up, scale-in) for enhanced user experience. Visualizations are generated using Matplotlib, Seaborn, and Plotly, ensuring high-quality, interactive charts for better data interpretation.
 
+**Navigation Enhancement**: Added a sticky navigation bar at the top of the page with smooth scrolling to major sections. Users can instantly jump to: Home, Upload Data, Currency, Financial Tools, Analysis, Budget, and Savings Goals with a single click. The navigation features glassmorphism styling (backdrop blur, gradient background) and Mac OS-style hover animations, staying visible as users scroll for quick access to any section.
+
 ## Recent Implementation Updates
 
 ### November 9, 2025 - Financial Tools Section
