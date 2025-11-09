@@ -2001,6 +2001,615 @@ if st.session_state.show_financial_tools:
             else:
                 st.info("💭 **Tip**: Make sure you have at least 3 months emergency fund before staying aggressive!")
     
+    # Retirement Planning Calculator
+    with st.expander("🏖️ Retirement Planning Calculator - Am I On Track?", expanded=False):
+        st.markdown("**Plan your golden years and see if you're saving enough for retirement!**")
+        
+        ret_col1, ret_col2, ret_col3 = st.columns(3)
+        
+        with ret_col1:
+            current_age = st.number_input("👤 Current Age", min_value=18, max_value=80, value=30, step=1)
+            retirement_age = st.number_input("🏖️ Retirement Age", min_value=current_age+1, max_value=90, value=65, step=1)
+            current_savings = st.number_input("💰 Current Retirement Savings ($)", min_value=0.0, value=50000.0, step=5000.0)
+        
+        with ret_col2:
+            monthly_contribution_ret = st.number_input("📅 Monthly Contribution ($)", min_value=0.0, value=500.0, step=100.0, key="ret_monthly")
+            annual_return_ret = st.slider("📈 Expected Annual Return (%)", min_value=0.0, max_value=15.0, value=7.0, step=0.5)
+        
+        with ret_col3:
+            retirement_monthly_expenses = st.number_input("🏠 Expected Monthly Expenses in Retirement ($)", min_value=0.0, value=4000.0, step=500.0)
+            social_security = st.number_input("💵 Expected Social Security/Pension ($/month)", min_value=0.0, value=1500.0, step=100.0)
+            retirement_years = st.number_input("⏰ Years in Retirement", min_value=5, max_value=50, value=25, step=5, help="How long you expect to live in retirement")
+        
+        # Calculate retirement projections
+        years_to_retirement = retirement_age - current_age
+        months_to_retirement = years_to_retirement * 12
+        
+        # Future value at retirement
+        monthly_rate_ret = annual_return_ret / (12 * 100)
+        
+        # FV of current savings
+        fv_current = current_savings * ((1 + monthly_rate_ret) ** months_to_retirement)
+        
+        # FV of monthly contributions
+        if monthly_contribution_ret > 0 and monthly_rate_ret > 0:
+            fv_contributions = monthly_contribution_ret * (((1 + monthly_rate_ret) ** months_to_retirement - 1) / monthly_rate_ret)
+        else:
+            fv_contributions = monthly_contribution_ret * months_to_retirement
+        
+        total_at_retirement = fv_current + fv_contributions
+        
+        # Calculate retirement needs
+        monthly_gap = retirement_monthly_expenses - social_security
+        total_needed = monthly_gap * 12 * retirement_years
+        
+        # Calculate if on track
+        surplus_or_deficit = total_at_retirement - total_needed
+        on_track = surplus_or_deficit >= 0
+        
+        # How much would last in retirement (withdrawal calculation)
+        if monthly_gap > 0:
+            years_money_lasts = total_at_retirement / (monthly_gap * 12)
+        else:
+            years_money_lasts = float('inf')
+        
+        # Display verdict
+        st.markdown("### 🎯 Retirement Readiness")
+        
+        if on_track:
+            st.success(f"✅ **GREAT NEWS!** You're on track for retirement! You'll have **${surplus_or_deficit:,.0f} extra** beyond your needs!")
+        else:
+            st.error(f"⚠️ **ACTION NEEDED!** You're projected to be **${abs(surplus_or_deficit):,.0f} short** for retirement.")
+        
+        # Display metrics
+        st.markdown("### 💰 Retirement Projection")
+        ret_metric1, ret_metric2, ret_metric3, ret_metric4 = st.columns(4)
+        
+        with ret_metric1:
+            st.metric("💼 At Retirement", f"${total_at_retirement:,.0f}", delta=f"In {years_to_retirement} years")
+        with ret_metric2:
+            st.metric("🎯 Total Needed", f"${total_needed:,.0f}", help=f"{retirement_years} years × ${monthly_gap:,.0f}/mo")
+        with ret_metric3:
+            if years_money_lasts == float('inf'):
+                st.metric("⏰ Money Lasts", "Forever!", delta="Fully covered")
+            else:
+                color = "normal" if years_money_lasts >= retirement_years else "inverse"
+                st.metric("⏰ Money Lasts", f"{years_money_lasts:.1f} years", delta_color=color)
+        with ret_metric4:
+            monthly_income_retirement = social_security + (total_at_retirement / (retirement_years * 12) if retirement_years > 0 else 0)
+            st.metric("💵 Monthly Income", f"${monthly_income_retirement:,.0f}", help="Social Security + portfolio withdrawals")
+        
+        # Visualization
+        st.markdown("### 📊 Savings Growth to Retirement")
+        
+        years_array_ret = list(range(years_to_retirement + 1))
+        savings_trajectory_ret = []
+        
+        for yr in years_array_ret:
+            months = yr * 12
+            fv_curr = current_savings * ((1 + monthly_rate_ret) ** months)
+            if monthly_contribution_ret > 0 and monthly_rate_ret > 0:
+                fv_cont = monthly_contribution_ret * (((1 + monthly_rate_ret) ** months - 1) / monthly_rate_ret)
+            else:
+                fv_cont = monthly_contribution_ret * months
+            savings_trajectory_ret.append(fv_curr + fv_cont)
+        
+        ages_array = [current_age + yr for yr in years_array_ret]
+        
+        fig_retirement = go.Figure()
+        
+        # Savings trajectory
+        fig_retirement.add_trace(go.Scatter(
+            x=ages_array,
+            y=savings_trajectory_ret,
+            fill='tozeroy',
+            name='Projected Savings',
+            line=dict(color='#10b981', width=3),
+            hovertemplate='<b>Age %{x}</b><br>Savings: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Target line
+        fig_retirement.add_hline(
+            y=total_needed,
+            line_dash="dash",
+            line_color="orange",
+            annotation_text=f"Target: ${total_needed:,.0f}",
+            annotation_position="right"
+        )
+        
+        fig_retirement.update_layout(
+            title='🚀 Path to Retirement',
+            xaxis_title='Age',
+            yaxis_title='Savings ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=450
+        )
+        
+        st.plotly_chart(fig_retirement, use_container_width=True)
+        
+        # Breakdown table
+        st.markdown("### 📋 Retirement Income Breakdown")
+        retirement_breakdown = {
+            "Income Source": ["Social Security/Pension", "Portfolio Withdrawals", "**Total Monthly Income**"],
+            "Amount": [
+                f"${social_security:,.0f}",
+                f"${monthly_gap if total_at_retirement > 0 else 0:,.0f}",
+                f"**${monthly_income_retirement:,.0f}**"
+            ],
+            "Annual": [
+                f"${social_security * 12:,.0f}",
+                f"${(monthly_gap * 12) if total_at_retirement > 0 else 0:,.0f}",
+                f"**${monthly_income_retirement * 12:,.0f}**"
+            ]
+        }
+        st.dataframe(pd.DataFrame(retirement_breakdown), use_container_width=True, hide_index=True)
+        
+        # Smart Insights
+        st.markdown("### 💡 Retirement Insights")
+        ret_insight1, ret_insight2 = st.columns(2)
+        
+        with ret_insight1:
+            if on_track:
+                st.success(f"🎉 **On Track!** Keep contributing ${monthly_contribution_ret:,.0f}/month and you'll have a comfortable retirement!")
+            else:
+                # Calculate needed monthly contribution
+                needed_fv = total_needed
+                if monthly_rate_ret > 0:
+                    additional_monthly = (needed_fv - fv_current) / (((1 + monthly_rate_ret) ** months_to_retirement - 1) / monthly_rate_ret)
+                else:
+                    additional_monthly = (needed_fv - fv_current) / months_to_retirement if months_to_retirement > 0 else 0
+                increase_needed = additional_monthly - monthly_contribution_ret
+                if increase_needed > 0:
+                    st.warning(f"📈 **Action**: Increase monthly contribution by **${increase_needed:,.0f}** to meet your retirement goal!")
+                else:
+                    st.info(f"💰 **Consider**: Reducing expenses in retirement or increasing Social Security benefits.")
+        
+        with ret_insight2:
+            # Retirement age adjustment
+            if not on_track and monthly_contribution_ret > 0:
+                # Calculate retirement age needed to meet goal
+                years_needed = 0
+                for test_years in range(1, 50):
+                    test_months = test_years * 12
+                    test_fv_curr = current_savings * ((1 + monthly_rate_ret) ** test_months)
+                    if monthly_rate_ret > 0:
+                        test_fv_cont = monthly_contribution_ret * (((1 + monthly_rate_ret) ** test_months - 1) / monthly_rate_ret)
+                    else:
+                        test_fv_cont = monthly_contribution_ret * test_months
+                    if test_fv_curr + test_fv_cont >= total_needed:
+                        years_needed = test_years
+                        break
+                
+                if years_needed > 0:
+                    adjusted_retirement_age = current_age + years_needed
+                    st.info(f"⏰ **Alternative**: Retire at age **{adjusted_retirement_age}** ({years_needed} years) with current savings rate.")
+            else:
+                early_retirement_possible = years_money_lasts > retirement_years
+                if early_retirement_possible:
+                    st.success(f"🎁 **Bonus**: You might be able to retire a few years earlier or enjoy a higher lifestyle!")
+    
+    # Debt Payoff Planner
+    with st.expander("💳 Debt Payoff Planner - Get Out of Debt Faster!", expanded=False):
+        st.markdown("**Compare strategies and create a plan to become debt-free!**")
+        
+        st.info("💡 **Two Popular Strategies**: **Snowball** (pay smallest debt first) vs **Avalanche** (pay highest interest first)")
+        
+        # Number of debts
+        num_debts = st.number_input("📝 How many debts do you have?", min_value=1, max_value=10, value=3, step=1)
+        
+        # Debt inputs
+        debts = []
+        st.markdown("### 📋 Enter Your Debts")
+        
+        for i in range(num_debts):
+            with st.expander(f"Debt #{i+1}", expanded=True):
+                col_debt1, col_debt2, col_debt3 = st.columns(3)
+                with col_debt1:
+                    debt_name = st.text_input(f"Name", value=f"Debt {i+1}", key=f"debt_name_{i}")
+                    balance = st.number_input(f"Balance ($)", min_value=0.0, value=5000.0, step=100.0, key=f"debt_balance_{i}")
+                with col_debt2:
+                    interest = st.number_input(f"Interest Rate (%)", min_value=0.0, max_value=30.0, value=15.0, step=0.5, key=f"debt_interest_{i}")
+                    min_payment = st.number_input(f"Minimum Payment ($)", min_value=0.0, value=100.0, step=10.0, key=f"debt_min_{i}")
+                with col_debt3:
+                    st.metric("Monthly Interest", f"${balance * (interest/100/12):,.2f}")
+                    st.metric("Payoff Years (min only)", f"{(balance/min_payment/12):.1f}" if min_payment > 0 else "∞")
+                
+                debts.append({
+                    "name": debt_name,
+                    "balance": balance,
+                    "interest": interest,
+                    "min_payment": min_payment
+                })
+        
+        # Extra payment
+        st.markdown("### 💰 Extra Payment Strategy")
+        extra_payment = st.number_input("💸 Extra Monthly Payment (beyond minimums)", min_value=0.0, value=200.0, step=50.0)
+        
+        # Calculate both strategies
+        def calculate_payoff(debts_list, strategy, extra):
+            debts_copy = [d.copy() for d in debts_list]
+            total_paid = 0
+            months = 0
+            payoff_order = []
+            
+            # Sort based on strategy
+            if strategy == "snowball":
+                debts_copy.sort(key=lambda x: x["balance"])
+            else:  # avalanche
+                debts_copy.sort(key=lambda x: -x["interest"])
+            
+            while any(d["balance"] > 0 for d in debts_copy):
+                months += 1
+                if months > 600:  # Safety limit
+                    break
+                
+                # Apply minimum payments to all debts
+                for debt in debts_copy:
+                    if debt["balance"] > 0:
+                        monthly_interest = debt["balance"] * (debt["interest"] / 100 / 12)
+                        payment = min(debt["min_payment"], debt["balance"] + monthly_interest)
+                        principal = payment - monthly_interest
+                        debt["balance"] -= principal
+                        total_paid += payment
+                        
+                        if debt["balance"] <= 0:
+                            debt["balance"] = 0
+                            if debt["name"] not in payoff_order:
+                                payoff_order.append((debt["name"], months))
+                
+                # Apply extra payment to target debt
+                target_debt = next((d for d in debts_copy if d["balance"] > 0), None)
+                if target_debt and extra > 0:
+                    monthly_interest = target_debt["balance"] * (target_debt["interest"] / 100 / 12)
+                    extra_to_principal = min(extra, target_debt["balance"])
+                    target_debt["balance"] -= extra_to_principal
+                    total_paid += extra_to_principal
+                    
+                    if target_debt["balance"] <= 0:
+                        target_debt["balance"] = 0
+                        if target_debt["name"] not in [p[0] for p in payoff_order]:
+                            payoff_order.append((target_debt["name"], months))
+            
+            return months, total_paid, payoff_order
+        
+        # Calculate both strategies
+        snowball_months, snowball_total, snowball_order = calculate_payoff(debts, "snowball", extra_payment)
+        avalanche_months, avalanche_total, avalanche_order = calculate_payoff(debts, "avalanche", extra_payment)
+        
+        # Display comparison
+        st.markdown("### 🔥 Strategy Comparison")
+        
+        strategy_col1, strategy_col2 = st.columns(2)
+        
+        with strategy_col1:
+            st.markdown("#### ❄️ Snowball Method")
+            st.info("**Pay smallest balance first** - Quick wins for motivation!")
+            st.metric("⏰ Time to Debt-Free", f"{snowball_months} months", delta=f"{snowball_months/12:.1f} years")
+            st.metric("💰 Total Paid", f"${snowball_total:,.0f}")
+            st.metric("📊 Total Interest", f"${snowball_total - sum(d['balance'] for d in debts):,.0f}")
+        
+        with strategy_col2:
+            st.markdown("#### 🏔️ Avalanche Method")
+            st.info("**Pay highest interest first** - Save the most money!")
+            st.metric("⏰ Time to Debt-Free", f"{avalanche_months} months", delta=f"{avalanche_months/12:.1f} years")
+            st.metric("💰 Total Paid", f"${avalanche_total:,.0f}")
+            st.metric("📊 Total Interest", f"${avalanche_total - sum(d['balance'] for d in debts):,.0f}")
+        
+        # Winner banner
+        if avalanche_total < snowball_total:
+            savings = snowball_total - avalanche_total
+            time_saved = snowball_months - avalanche_months
+            st.success(f"🏆 **Avalanche Wins!** Saves you **${savings:,.0f}** and **{time_saved} months** compared to Snowball!")
+        elif snowball_total < avalanche_total:
+            st.success(f"🏆 **Snowball Wins!** Faster payoff with quick wins for motivation!")
+        else:
+            st.info("Both methods result in the same outcome!")
+        
+        # Payoff timeline visualization
+        st.markdown("### 📅 Debt Payoff Timeline")
+        
+        fig_debt = go.Figure()
+        
+        # Create timeline for avalanche (recommended)
+        months_timeline = list(range(avalanche_months + 1))
+        remaining_debt = []
+        
+        debts_sim = [d.copy() for d in debts]
+        debts_sim.sort(key=lambda x: -x["interest"])  # Avalanche
+        
+        for month in months_timeline:
+            total_remaining = sum(d["balance"] for d in debts_sim)
+            remaining_debt.append(total_remaining)
+            
+            if month < avalanche_months:
+                # Apply payments
+                for debt in debts_sim:
+                    if debt["balance"] > 0:
+                        monthly_interest = debt["balance"] * (debt["interest"] / 100 / 12)
+                        payment = min(debt["min_payment"], debt["balance"] + monthly_interest)
+                        principal = payment - monthly_interest
+                        debt["balance"] = max(0, debt["balance"] - principal)
+                
+                # Apply extra to highest interest
+                target = next((d for d in debts_sim if d["balance"] > 0), None)
+                if target and extra_payment > 0:
+                    extra_to_principal = min(extra_payment, target["balance"])
+                    target["balance"] = max(0, target["balance"] - extra_to_principal)
+        
+        fig_debt.add_trace(go.Scatter(
+            x=months_timeline,
+            y=remaining_debt,
+            fill='tozeroy',
+            name='Remaining Debt',
+            line=dict(color='#ef4444', width=3),
+            hovertemplate='<b>Month %{x}</b><br>Debt: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_debt.update_layout(
+            title='🚀 Journey to Debt-Free (Avalanche Method)',
+            xaxis_title='Months',
+            yaxis_title='Total Debt Remaining ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=400
+        )
+        
+        st.plotly_chart(fig_debt, use_container_width=True)
+        
+        # Payoff order table
+        st.markdown("### 📋 Recommended Payoff Order (Avalanche)")
+        payoff_table = {
+            "Order": [i+1 for i in range(len(avalanche_order))],
+            "Debt Name": [p[0] for p in avalanche_order],
+            "Payoff Month": [p[1] for p in avalanche_order],
+            "Time from Start": [f"{p[1]} months ({p[1]/12:.1f} years)" for p in avalanche_order]
+        }
+        st.dataframe(pd.DataFrame(payoff_table), use_container_width=True, hide_index=True)
+        
+        # Smart insights
+        st.markdown("### 💡 Debt Freedom Insights")
+        debt_insight1, debt_insight2 = st.columns(2)
+        
+        with debt_insight1:
+            total_debt = sum(d["balance"] for d in debts)
+            total_min_payments = sum(d["min_payment"] for d in debts)
+            
+            st.info(f"💰 **Total Debt**: ${total_debt:,.0f}")
+            st.info(f"💳 **Minimum Payments**: ${total_min_payments:,.0f}/month")
+            
+            if extra_payment > 0:
+                st.success(f"🚀 **Accelerated Payoff**: With ${extra_payment:,.0f} extra/month, you'll be debt-free in **{avalanche_months} months**!")
+            else:
+                st.warning("⚠️ **Paying minimums only will take much longer!** Add extra payments to accelerate!")
+        
+        with debt_insight2:
+            avg_interest = sum(d["balance"] * d["interest"] for d in debts) / total_debt if total_debt > 0 else 0
+            st.metric("📊 Weighted Avg Interest", f"{avg_interest:.1f}%")
+            
+            if extra_payment >= total_min_payments * 0.5:
+                st.success("🎉 **Aggressive Strategy!** Your extra payment is 50%+ of minimums - excellent!")
+            elif extra_payment > 0:
+                st.info(f"💪 **Good Start!** Consider increasing extra payment to ${total_min_payments * 0.5:,.0f} for faster results.")
+            
+            # Freedom date
+            import datetime
+            freedom_date = datetime.datetime.now() + datetime.timedelta(days=avalanche_months * 30)
+            st.success(f"🗓️ **Freedom Date**: {freedom_date.strftime('%B %Y')}!")
+    
+    # Investment Portfolio Analyzer
+    with st.expander("📈 Investment Portfolio Analyzer - Optimize Your Investments", expanded=False):
+        st.markdown("**Analyze your portfolio allocation and get diversification recommendations!**")
+        
+        st.info("💡 **Tip**: A well-diversified portfolio reduces risk. Ideal allocation depends on age and risk tolerance!")
+        
+        # Input method
+        input_method = st.radio("How do you want to enter your portfolio?", ["Manual Entry", "Quick Allocation"], horizontal=True)
+        
+        if input_method == "Manual Entry":
+            st.markdown("### 📋 Enter Your Holdings")
+            num_holdings = st.number_input("Number of holdings", min_value=1, max_value=20, value=5, step=1)
+            
+            holdings = []
+            for i in range(num_holdings):
+                col_hold1, col_hold2, col_hold3 = st.columns(3)
+                with col_hold1:
+                    asset_name = st.text_input(f"Asset Name", value=f"Asset {i+1}", key=f"asset_name_{i}")
+                with col_hold2:
+                    asset_type = st.selectbox(f"Asset Type", 
+                                             ["Stocks", "Bonds", "Real Estate", "Cash", "Commodities", "Crypto"],
+                                             key=f"asset_type_{i}")
+                with col_hold3:
+                    amount = st.number_input(f"Value ($)", min_value=0.0, value=10000.0, step=1000.0, key=f"asset_amount_{i}")
+                
+                holdings.append({
+                    "name": asset_name,
+                    "type": asset_type,
+                    "amount": amount
+                })
+        
+        else:  # Quick Allocation
+            st.markdown("### 💰 Quick Portfolio Entry")
+            total_portfolio = st.number_input("Total Portfolio Value ($)", min_value=0.0, value=100000.0, step=5000.0)
+            
+            quick_col1, quick_col2, quick_col3 = st.columns(3)
+            
+            with quick_col1:
+                stocks_pct = st.slider("📊 Stocks (%)", 0, 100, 60, 5)
+                bonds_pct = st.slider("🏦 Bonds (%)", 0, 100, 20, 5)
+            with quick_col2:
+                real_estate_pct = st.slider("🏠 Real Estate (%)", 0, 100, 10, 5)
+                cash_pct = st.slider("💵 Cash (%)", 0, 100, 5, 5)
+            with quick_col3:
+                commodities_pct = st.slider("⚡ Commodities (%)", 0, 100, 3, 1)
+                crypto_pct = st.slider("₿ Crypto (%)", 0, 100, 2, 1)
+            
+            total_pct = stocks_pct + bonds_pct + real_estate_pct + cash_pct + commodities_pct + crypto_pct
+            
+            if total_pct != 100:
+                st.warning(f"⚠️ Total allocation is {total_pct}%. Please adjust to 100%.")
+            
+            holdings = [
+                {"name": "Stocks", "type": "Stocks", "amount": total_portfolio * (stocks_pct / 100)},
+                {"name": "Bonds", "type": "Bonds", "amount": total_portfolio * (bonds_pct / 100)},
+                {"name": "Real Estate", "type": "Real Estate", "amount": total_portfolio * (real_estate_pct / 100)},
+                {"name": "Cash", "type": "Cash", "amount": total_portfolio * (cash_pct / 100)},
+                {"name": "Commodities", "type": "Commodities", "amount": total_portfolio * (commodities_pct / 100)},
+                {"name": "Crypto", "type": "Crypto", "amount": total_portfolio * (crypto_pct / 100)}
+            ]
+            holdings = [h for h in holdings if h["amount"] > 0]  # Remove zero allocations
+        
+        # Calculate totals by type
+        total_value = sum(h["amount"] for h in holdings)
+        
+        if total_value > 0:
+            allocation_by_type = {}
+            for h in holdings:
+                if h["type"] not in allocation_by_type:
+                    allocation_by_type[h["type"]] = 0
+                allocation_by_type[h["type"]] += h["amount"]
+            
+            # Display current allocation
+            st.markdown("### 📊 Current Portfolio Allocation")
+            
+            alloc_col1, alloc_col2 = st.columns(2)
+            
+            with alloc_col1:
+                st.metric("💰 Total Portfolio Value", f"${total_value:,.0f}")
+                st.metric("🎯 Number of Holdings", len(holdings))
+                
+                # Diversification score (simple version)
+                num_types = len(allocation_by_type)
+                concentration = max(allocation_by_type.values()) / total_value * 100
+                
+                if concentration < 40 and num_types >= 3:
+                    diversification_score = 90
+                    score_label = "Excellent"
+                    score_color = "normal"
+                elif concentration < 60 and num_types >= 2:
+                    diversification_score = 70
+                    score_label = "Good"
+                    score_color = "normal"
+                else:
+                    diversification_score = 40
+                    score_label = "Needs Improvement"
+                    score_color = "inverse"
+                
+                st.metric("🎯 Diversification Score", f"{diversification_score}/100", delta=score_label, delta_color=score_color)
+            
+            with alloc_col2:
+                # Pie chart
+                fig_portfolio = go.Figure(data=[go.Pie(
+                    labels=list(allocation_by_type.keys()),
+                    values=list(allocation_by_type.values()),
+                    hole=0.4,
+                    marker=dict(colors=['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']),
+                    textinfo='label+percent',
+                    hovertemplate='<b>%{label}</b><br>$%{value:,.0f}<br>%{percent}<extra></extra>'
+                )])
+                
+                fig_portfolio.update_layout(
+                    title='Asset Allocation',
+                    showlegend=True,
+                    height=300,
+                    margin=dict(t=30, b=0, l=0, r=0)
+                )
+                
+                st.plotly_chart(fig_portfolio, use_container_width=True)
+            
+            # Allocation table
+            st.markdown("### 📋 Detailed Breakdown")
+            breakdown_data = {
+                "Asset Type": list(allocation_by_type.keys()),
+                "Value": [f"${v:,.0f}" for v in allocation_by_type.values()],
+                "Percentage": [f"{(v/total_value*100):.1f}%" for v in allocation_by_type.values()],
+                "Risk Level": ["High" if k in ["Stocks", "Crypto"] else "Medium" if k in ["Real Estate", "Commodities"] else "Low" for k in allocation_by_type.keys()]
+            }
+            st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
+            
+            # Recommendations based on age (ask user)
+            st.markdown("### 💡 Personalized Recommendations")
+            
+            rec_col1, rec_col2 = st.columns(2)
+            
+            with rec_col1:
+                user_age = st.number_input("👤 Your Age (for personalized advice)", min_value=18, max_value=90, value=35, step=1)
+                risk_tolerance = st.select_slider("📊 Risk Tolerance", options=["Conservative", "Moderate", "Aggressive"], value="Moderate")
+            
+            with rec_col2:
+                # Rule of thumb: stocks = 100 - age
+                recommended_stocks = 100 - user_age
+                recommended_bonds = user_age
+                
+                # Adjust for risk tolerance
+                if risk_tolerance == "Aggressive":
+                    recommended_stocks = min(90, recommended_stocks + 15)
+                    recommended_bonds = max(5, recommended_bonds - 15)
+                elif risk_tolerance == "Conservative":
+                    recommended_stocks = max(20, recommended_stocks - 15)
+                    recommended_bonds = min(70, recommended_bonds + 15)
+                
+                current_stocks = allocation_by_type.get("Stocks", 0) / total_value * 100
+                current_bonds = allocation_by_type.get("Bonds", 0) / total_value * 100
+                
+                st.metric("📈 Recommended Stocks", f"{recommended_stocks:.0f}%", delta=f"Current: {current_stocks:.0f}%")
+                st.metric("🏦 Recommended Bonds", f"{recommended_bonds:.0f}%", delta=f"Current: {current_bonds:.0f}%")
+            
+            # Rebalancing suggestions
+            st.markdown("### 🔄 Rebalancing Suggestions")
+            
+            stocks_diff = current_stocks - recommended_stocks
+            bonds_diff = current_bonds - recommended_bonds
+            
+            if abs(stocks_diff) > 10 or abs(bonds_diff) > 10:
+                st.warning("⚠️ **Rebalancing Recommended**: Your allocation differs significantly from recommendations.")
+                
+                rebal_col1, rebal_col2 = st.columns(2)
+                
+                with rebal_col1:
+                    if stocks_diff > 10:
+                        reduce_amount = total_value * (stocks_diff / 100)
+                        st.info(f"📉 **Reduce Stocks**: Sell ~${reduce_amount:,.0f} ({stocks_diff:.0f}%)")
+                    elif stocks_diff < -10:
+                        increase_amount = total_value * (abs(stocks_diff) / 100)
+                        st.info(f"📈 **Increase Stocks**: Buy ~${increase_amount:,.0f} ({abs(stocks_diff):.0f}%)")
+                
+                with rebal_col2:
+                    if bonds_diff > 10:
+                        reduce_amount = total_value * (bonds_diff / 100)
+                        st.info(f"📉 **Reduce Bonds**: Sell ~${reduce_amount:,.0f} ({bonds_diff:.0f}%)")
+                    elif bonds_diff < -10:
+                        increase_amount = total_value * (abs(bonds_diff) / 100)
+                        st.info(f"📈 **Increase Bonds**: Buy ~${increase_amount:,.0f} ({abs(bonds_diff):.0f}%)")
+            else:
+                st.success("✅ **Well Balanced!** Your portfolio allocation is close to recommendations for your age and risk tolerance.")
+            
+            # Risk assessment
+            st.markdown("### ⚠️ Risk Assessment")
+            risk_col1, risk_col2 = st.columns(2)
+            
+            with risk_col1:
+                high_risk = allocation_by_type.get("Stocks", 0) + allocation_by_type.get("Crypto", 0)
+                high_risk_pct = high_risk / total_value * 100
+                
+                if high_risk_pct > 70:
+                    st.warning(f"⚡ **High Risk**: {high_risk_pct:.0f}% in volatile assets. Great for long-term growth but prepare for volatility!")
+                elif high_risk_pct > 40:
+                    st.info(f"⚖️ **Moderate Risk**: {high_risk_pct:.0f}% in growth assets. Balanced approach with decent upside.")
+                else:
+                    st.success(f"🛡️ **Low Risk**: {high_risk_pct:.0f}% in volatile assets. Conservative and stable.")
+            
+            with risk_col2:
+                # Concentration risk
+                if concentration > 60:
+                    st.error(f"⚠️ **Concentration Risk**: {concentration:.0f}% in one asset type. Consider diversifying!")
+                elif concentration > 40:
+                    st.warning(f"📊 **Moderate Concentration**: {concentration:.0f}% in top holding. Room for improvement.")
+                else:
+                    st.success(f"✅ **Well Diversified**: Largest position is {concentration:.0f}%.")
+        else:
+            st.warning("⚠️ Please enter your portfolio holdings to see analysis.")
+    
     st.markdown("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
