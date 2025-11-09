@@ -818,7 +818,7 @@ if uploaded_files:
                     for category in ['Income', 'Expense', 'Investment']:
                         if category in budgets and budgets[category] > 0:
                             actual = metrics.get(f'Total {category}' if category == 'Income' else f'Total {category}s' if category == 'Expense' else 'Total Investments', 0)
-                            budget = budgets[category]
+                            budget = float(budgets[category])
                             pct = (actual / budget * 100) if budget > 0 else 0
                             
                             if category == 'Expense' and pct > 100:
