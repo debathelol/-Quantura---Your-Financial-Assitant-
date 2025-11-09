@@ -572,12 +572,113 @@ st.markdown("""
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    [data-testid="stDataFrame"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
     }
     
     /* Subheaders */
     h3 {
         color: #4f46e5 !important;
         font-weight: 700 !important;
+    }
+    
+    /* Mac OS Style Hover Effects */
+    .stMetric {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        cursor: pointer;
+        border-radius: 10px;
+        padding: 0.5rem;
+    }
+    
+    .stMetric:hover {
+        transform: scale(1.03);
+        background: rgba(99, 102, 241, 0.05);
+    }
+    
+    /* File Uploader Mac OS Effect */
+    [data-testid="stFileUploader"]:hover {
+        transform: scale(1.01);
+        box-shadow: 0 8px 30px rgba(129, 140, 248, 0.2);
+    }
+    
+    /* Input Fields */
+    input[type="text"], input[type="number"], input[type="date"] {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+    
+    input[type="text"]:hover, input[type="number"]:hover, input[type="date"]:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+    }
+    
+    input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25) !important;
+    }
+    
+    /* Select Dropdown */
+    select {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+    
+    select:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15) !important;
+    }
+    
+    /* Tab Mac OS Style */
+    .stTabs [data-baseweb="tab"] {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        transform: translateY(-2px) scale(1.02);
+    }
+    
+    /* Chart Containers */
+    [data-testid="stImage"] {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    [data-testid="stImage"]:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    }
+    
+    /* Success/Warning/Error Messages Mac OS */
+    .stSuccess, .stWarning, .stError {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        cursor: pointer;
+    }
+    
+    .stSuccess:hover {
+        transform: translateX(5px);
+        box-shadow: -4px 4px 12px rgba(16, 185, 129, 0.2);
+    }
+    
+    .stWarning:hover {
+        transform: translateX(5px);
+        box-shadow: -4px 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    
+    .stError:hover {
+        transform: translateX(5px);
+        box-shadow: -4px 4px 12px rgba(239, 68, 68, 0.2);
+    }
+    
+    /* Sidebar Items */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    [data-testid="stSidebar"] button:hover {
+        transform: scale(1.02);
     }
 </style>
 
