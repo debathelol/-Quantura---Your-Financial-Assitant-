@@ -293,6 +293,7 @@ st.markdown("""
         box-shadow: 0 20px 60px rgba(124, 58, 237, 0.3);
         position: relative;
         overflow: hidden;
+        animation: glow 4s ease-in-out infinite;
     }
     
     .main-header::before {
@@ -306,9 +307,35 @@ st.markdown("""
         animation: pulse 4s ease-in-out infinite;
     }
     
+    .main-header::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 3s infinite;
+    }
+    
     @keyframes pulse {
         0%, 100% { transform: scale(1); opacity: 0.5; }
         50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 200%; }
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 20px 60px rgba(124, 58, 237, 0.3); }
+        50% { box-shadow: 0 25px 80px rgba(236, 72, 153, 0.5); }
     }
     
     .header-title {
@@ -350,14 +377,40 @@ st.markdown("""
         border-radius: 12px;
         padding: 1rem;
         text-align: center;
-        transition: all 0.3s ease;
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         font-family: 'Inter', sans-serif;
+        animation: float 3s ease-in-out infinite;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .feature-card:nth-child(2) { animation-delay: 0.2s; }
+    .feature-card:nth-child(3) { animation-delay: 0.4s; }
+    .feature-card:nth-child(4) { animation-delay: 0.6s; }
+    .feature-card:nth-child(5) { animation-delay: 0.8s; }
+    .feature-card:nth-child(6) { animation-delay: 1s; }
+    
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: rotate(45deg);
+        transition: all 0.6s ease;
+    }
+    
+    .feature-card:hover::before {
+        left: 100%;
     }
     
     .feature-card:hover {
         background: rgba(255, 255, 255, 0.25);
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        transform: translateY(-10px) scale(1.05);
+        box-shadow: 0 20px 50px rgba(236, 72, 153, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.4);
     }
     
     .feature-icon {
@@ -407,17 +460,41 @@ st.markdown("""
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         color: white;
         border: none;
-        border-radius: 8px;
-        padding: 0.5rem 2rem;
+        border-radius: 12px;
+        padding: 0.6rem 2.5rem;
         font-weight: 600;
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stButton>button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    .stButton>button:hover::before {
+        width: 300px;
+        height: 300px;
     }
     
     .stButton>button:hover {
         background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+        transform: translateY(-3px) scale(1.02);
+    }
+    
+    .stButton>button:active {
+        transform: translateY(-1px) scale(0.98);
     }
     
     /* Download Button Styling */
@@ -425,16 +502,39 @@ st.markdown("""
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
         border: none;
-        border-radius: 8px;
-        padding: 0.5rem 2rem;
+        border-radius: 12px;
+        padding: 0.6rem 2.5rem;
         font-weight: 600;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stDownloadButton>button::after {
+        content: '✨';
+        position: absolute;
+        top: 50%;
+        right: -20px;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: all 0.4s ease;
+    }
+    
+    .stDownloadButton>button:hover::after {
+        right: 20px;
+        opacity: 1;
     }
     
     .stDownloadButton>button:hover {
         background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6);
+        transform: translateY(-3px) scale(1.02);
+        padding-right: 3.5rem;
+    }
+    
+    .stDownloadButton>button:active {
+        transform: translateY(-1px) scale(0.98);
     }
     
     /* Metric Cards */
