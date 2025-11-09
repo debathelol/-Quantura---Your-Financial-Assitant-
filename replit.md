@@ -90,6 +90,26 @@ Added SIX comprehensive financial calculators with interactive visualizations:
    - **Concentration risk alerts**: Warning when one asset type exceeds 40-60% of portfolio
    - Manual entry supports up to 20 individual holdings for detailed portfolio analysis
 
+7. **Rent vs Buy Calculator - Make the Right Housing Decision**:
+   - Comprehensive cost comparison between renting and buying over 1-30 years
+   - **Rent scenario inputs**: Monthly rent, annual increase %, renter's insurance, upfront costs
+   - **Buy scenario inputs**: Home price, down payment %, mortgage rate, loan term, property tax, HOA fees, insurance, maintenance %, closing costs, appreciation rate
+   - **Year-by-year simulation**: Tracks cumulative costs, home equity, and investment values
+   - **Accurate accounting**: Only counts interest (not principal) as cost - principal builds equity
+   - **Opportunity cost analysis**: Models investing down payment difference at market returns
+   - **Net worth comparison**: Rent + investments vs home equity - costs
+   - **Break-even calculation**: Identifies year when buying becomes more profitable than renting
+   - **8 Key metrics**: Total rent paid, total buy costs, home equity, monthly costs, home value, break-even point
+   - **Dual Plotly charts**: Net worth comparison over time, cumulative costs comparison
+   - Break-even marker visualization on net worth chart
+   - **Smart Insights**: 
+     - Winner verdict (buying vs renting advantage with dollar amounts)
+     - Monthly savings analysis
+     - Home appreciation/depreciation tracking
+     - Timeline-based recommendations (short-term vs long-term considerations)
+     - Investment growth projections if renting
+   - Handles edge cases: No down payment, paid-off mortgages, zero interest rates
+
 All calculators feature:
 - Real-time calculations with instant updates
 - Professional Plotly visualizations (line charts, donut charts, timelines)
