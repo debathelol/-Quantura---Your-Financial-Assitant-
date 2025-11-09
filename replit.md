@@ -7,7 +7,7 @@ This is a comprehensive dual-format financial analysis application built with St
 
 The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
 
-**Last Updated**: November 9, 2025
+**Last Updated**: November 9, 2025 - Phase 1 Enhancements Completed
 
 # User Preferences
 
@@ -120,15 +120,28 @@ Uses fuzzy column matching to identify data type:
 
 ## Recent Enhancements (November 2025)
 
-### New Features Added:
-1. **Custom Categorization Rules**: Users can add/delete persistent keyword rules that override default categorization
-2. **Budget Tracking**: Set budgets per category with visual alerts (red >100%, yellow >90%, green <90%)
-3. **Expense Subcategorization**: Automatic breakdown into Housing, Food & Dining, Transportation, Utilities, Other with pie chart visualization
-4. **Year-over-Year Analysis**: Compare financial data across multiple years
-5. **Seasonal Trend Detection**: Identify spending patterns by season (Winter, Spring, Summer, Fall)
-6. **Date Range Filtering**: Filter analysis to specific date ranges
-7. **Multi-file Upload**: Upload and compare multiple CSV/Excel files simultaneously
-8. **Enhanced UI**: Tabbed interface for different analysis views
+### Phase 1 - Export & Intelligence Features (Completed Nov 9, 2025):
+1. **CSV/Excel Export**: Download filtered transaction data and monthly summaries in CSV or Excel format with multi-sheet support
+2. **Smart Insights Panel**: Automated financial highlights including:
+   - Biggest expense detection
+   - Month-over-month spending change alerts (>20% changes)
+   - Unusual large transaction detection (2σ above mean)
+   - Savings rate calculations with recommendations
+3. **Recurring Transaction Detection**: Intelligent algorithm that identifies subscriptions and recurring bills by analyzing:
+   - Transaction description + amount consistency
+   - Time interval regularity (monthly, weekly, quarterly)
+   - Next payment prediction with confidence scoring
+   - Fixed critical bug: Now properly detects negative expense amounts
+
+### Previous Features (Before Nov 9, 2025):
+4. **Custom Categorization Rules**: Users can add/delete persistent keyword rules that override default categorization
+5. **Budget Tracking**: Set budgets per category with visual alerts (red >100%, yellow >90%, green <90%)
+6. **Expense Subcategorization**: Automatic breakdown into Housing, Food & Dining, Transportation, Utilities, Other with pie chart visualization
+7. **Year-over-Year Analysis**: Compare financial data across multiple years
+8. **Seasonal Trend Detection**: Identify spending patterns by season (Winter, Spring, Summer, Fall)
+9. **Date Range Filtering**: Filter analysis to specific date ranges
+10. **Multi-file Upload**: Upload and compare multiple CSV/Excel files simultaneously
+11. **Enhanced UI**: Tabbed interface for different analysis views
 
 ### Robustness Improvements:
 - Empty date range handling with user warnings
