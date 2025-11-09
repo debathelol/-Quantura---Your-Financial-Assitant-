@@ -1616,6 +1616,354 @@ st.markdown("""
     .section-anchor {
         scroll-margin-top: 80px;
     }
+    
+    /* =====================================================
+       MOBILE RESPONSIVE DESIGN - SMOOTH & TOUCH-OPTIMIZED
+       ===================================================== */
+    
+    /* Tablet Devices (Portrait) */
+    @media only screen and (max-width: 768px) {
+        /* Navigation - Compact on tablets */
+        .nav-container {
+            padding: 12px 20px;
+            margin: -20px -20px 25px -20px;
+        }
+        
+        .nav-menu {
+            gap: 6px;
+        }
+        
+        .nav-item {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        /* Header adjustments */
+        .main-header {
+            padding: 20px 15px;
+        }
+        
+        .header-title {
+            font-size: 2.2rem !important;
+        }
+        
+        .header-subtitle {
+            font-size: 1rem !important;
+        }
+        
+        .features-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .feature-card {
+            padding: 12px;
+        }
+        
+        .feature-icon {
+            font-size: 1.8rem;
+        }
+        
+        .feature-text {
+            font-size: 0.75rem;
+        }
+    }
+    
+    /* Mobile Phones (All orientations) */
+    @media only screen and (max-width: 480px) {
+        /* Smooth transitions for all interactive elements */
+        * {
+            -webkit-tap-highlight-color: rgba(99, 102, 241, 0.3);
+            -webkit-touch-callout: none;
+        }
+        
+        /* Navigation - Mobile optimized */
+        .nav-container {
+            padding: 10px 12px;
+            margin: -10px -12px 20px -12px;
+        }
+        
+        .nav-menu {
+            gap: 5px;
+            justify-content: space-between;
+        }
+        
+        .nav-item {
+            padding: 8px 10px;
+            font-size: 11px;
+            border-radius: 8px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .nav-item:active {
+            transform: scale(0.98);
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Header - Mobile friendly */
+        .main-header {
+            padding: 20px 12px;
+        }
+        
+        .header-title {
+            font-size: 1.8rem !important;
+            margin-bottom: 8px;
+        }
+        
+        .header-subtitle {
+            font-size: 0.9rem !important;
+            margin-bottom: 5px;
+        }
+        
+        .header-tagline {
+            font-size: 0.85rem !important;
+        }
+        
+        /* Feature cards - 2 columns on mobile */
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 10px 0;
+        }
+        
+        .feature-card {
+            padding: 10px;
+            min-height: 80px;
+        }
+        
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        
+        .feature-text {
+            font-size: 0.7rem;
+        }
+        
+        /* Touch-friendly buttons - minimum 44px tap target */
+        .stButton button {
+            min-height: 48px !important;
+            padding: 12px 24px !important;
+            font-size: 15px !important;
+            border-radius: 12px !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .stButton button:active {
+            transform: scale(0.97) !important;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4) !important;
+        }
+        
+        /* Touch-friendly inputs */
+        .stTextInput input,
+        .stNumberInput input,
+        .stTextArea textarea {
+            min-height: 48px !important;
+            font-size: 16px !important;
+            padding: 12px !important;
+            border-radius: 10px !important;
+        }
+        
+        /* Select dropdowns */
+        .stSelectbox > div > div {
+            min-height: 48px !important;
+            font-size: 15px !important;
+        }
+        
+        /* Sliders - larger touch area */
+        .stSlider {
+            padding: 15px 0 !important;
+        }
+        
+        /* Checkboxes - bigger tap targets */
+        [data-testid="stCheckbox"] {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Radio buttons */
+        [data-testid="stRadio"] label {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Tabs - touch friendly */
+        .stTabs [data-baseweb="tab"] {
+            min-height: 48px !important;
+            font-size: 14px !important;
+            padding: 12px 16px !important;
+        }
+        
+        /* Expanders - larger touch target */
+        .streamlit-expanderHeader {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+            font-size: 15px !important;
+        }
+        
+        /* Metrics - better spacing on mobile */
+        [data-testid="stMetric"] {
+            padding: 12px !important;
+        }
+        
+        [data-testid="stMetricValue"] {
+            font-size: 1.3rem !important;
+        }
+        
+        [data-testid="stMetricLabel"] {
+            font-size: 0.85rem !important;
+        }
+        
+        /* Chat interface - mobile optimized */
+        .stChatMessage {
+            padding: 12px !important;
+            margin-bottom: 10px !important;
+        }
+        
+        .stChatInput textarea {
+            min-height: 48px !important;
+            font-size: 16px !important;
+        }
+        
+        /* File uploader - touch friendly */
+        [data-testid="stFileUploader"] button {
+            min-height: 48px !important;
+            font-size: 15px !important;
+        }
+        
+        /* Sidebar on mobile */
+        section[data-testid="stSidebar"] {
+            width: 85% !important;
+            max-width: 300px !important;
+        }
+        
+        /* Columns stack on mobile */
+        [data-testid="column"] {
+            width: 100% !important;
+            margin-bottom: 15px;
+        }
+        
+        /* Reduce padding on main container */
+        .block-container {
+            padding: 1rem 1rem !important;
+        }
+        
+        /* Section anchors adjusted for mobile nav */
+        .section-anchor {
+            scroll-margin-top: 60px;
+        }
+        
+        /* Smooth animations - optimized for mobile performance */
+        @keyframes mobileSlideIn {
+            0% {
+                transform: translateX(-10px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes mobileFadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        
+        /* Apply lighter animations on mobile for better performance */
+        .main .block-container {
+            animation: mobileFadeIn 0.4s ease-out;
+        }
+        
+        [data-testid="stMetricValue"] {
+            animation: mobileSlideIn 0.3s ease-out;
+        }
+        
+        /* Reduce glow effects on mobile for better performance */
+        .stButton button:hover {
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+        }
+        
+        /* Simplify hover effects on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .nav-item:hover {
+                transform: none;
+            }
+            
+            .feature-card:hover {
+                transform: none;
+            }
+            
+            /* Keep active states for feedback */
+            .nav-item:active,
+            .feature-card:active,
+            .stButton button:active {
+                transform: scale(0.97);
+            }
+        }
+    }
+    
+    /* Extra small phones */
+    @media only screen and (max-width: 360px) {
+        .nav-item {
+            padding: 6px 8px;
+            font-size: 10px;
+        }
+        
+        .header-title {
+            font-size: 1.5rem !important;
+        }
+        
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .feature-icon {
+            font-size: 1.3rem;
+        }
+        
+        .feature-text {
+            font-size: 0.65rem;
+        }
+    }
+    
+    /* Landscape mode on phones */
+    @media only screen and (max-height: 480px) and (orientation: landscape) {
+        .nav-container {
+            padding: 8px 15px;
+        }
+        
+        .nav-item {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .main-header {
+            padding: 15px 12px;
+        }
+        
+        .header-title {
+            font-size: 1.6rem !important;
+        }
+        
+        .features-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
 </style>
 
 <div id="home" class="section-anchor"></div>
