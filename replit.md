@@ -7,7 +7,7 @@ This is a comprehensive dual-format financial analysis application built with St
 
 The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
 
-**Last Updated**: November 9, 2025 - Phase 2 Advanced Features Completed (All 8 Features)
+**Last Updated**: November 9, 2025 - Phase 2 Complete + Critical Bug Fixes
 
 # User Preferences
 
@@ -147,6 +147,20 @@ Uses fuzzy column matching to identify data type:
    - Time interval regularity (monthly, weekly, quarterly)
    - Next payment prediction with confidence scoring
    - Fixed critical bug: Now properly detects negative expense amounts
+
+### Critical Bug Fixes (November 9, 2025):
+1. **Net Profit Calculation Fix**: Fixed financial impossibility where Net Profit was higher than Total Income
+   - Root cause: Bank statements use negative values for expenses (e.g., -$22.26)
+   - Solution: Applied abs() to expense/investment totals before profit calculation
+   - Result: Net Profit now correctly equals Income - Expenses
+2. **Savings Goals Button Layout Fix**: Resolved UI overflow where Update/Delete buttons broke container boundaries
+   - Root cause: Too many elements crammed in 3-column layout
+   - Solution: Expanded to 4-column layout with dedicated button column using compact symbols (✓ and 🗑️)
+   - Result: Professional, aligned UI with proper spacing
+3. **Smart Column Detection**: Enhanced file compatibility to handle real-world bank statement formats
+   - Handles variations like "Amount (USD)", "Amount (EUR)", "Transaction Date", etc.
+   - Prioritizes exact matches, then common patterns, then fuzzy matching
+   - Prevents false positives (e.g., "Update Notes" mistaken for date column)
 
 ### Previous Features (Before Nov 9, 2025):
 4. **Custom Categorization Rules**: Users can add/delete persistent keyword rules that override default categorization
