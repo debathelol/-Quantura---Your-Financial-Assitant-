@@ -282,6 +282,15 @@ def generate_report(metrics, monthly, df):
 st.set_page_config(page_title="FinAutomate", layout="wide")
 st.title("🚀 Automated Financial Reporting & Analysis System")
 
+st.markdown("""
+<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; margin-bottom: 2rem;'>
+    <h3 style='color: white; margin: 0; text-align: center;'>Transform Your Financial Data into Actionable Insights</h3>
+    <p style='color: #f0f0f0; text-align: center; margin-top: 1rem; font-size: 1.1rem;'>
+        📊 Auto-Categorize Transactions • 💰 Track Budgets • 📈 Analyze Trends • 🥧 Visualize Expenses • 📅 Compare Years • 🌸 Discover Patterns
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
     st.header("Quick Start")
     st.markdown("""
