@@ -97,6 +97,12 @@ def load_and_categorize(uploaded_file, custom_rules=None):
     else:
         df = pd.read_excel(uploaded_file)
     
+    required_columns = ['Date', 'Description', 'Amount']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}. Your file has: {', '.join(df.columns.tolist())}. Please ensure your CSV has 'Date', 'Description', and 'Amount' columns.")
+    
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df = df.dropna(subset=['Date'])
     
@@ -774,17 +780,25 @@ tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown"
 uploaded_files = st.file_uploader("📁 Upload Financial Data (CSV/Excel)", type=['csv', 'xlsx'], accept_multiple_files=True)
 
 if uploaded_files:
-    all_dfs = []
-    for uploaded_file in uploaded_files:
-        with st.spinner(f"Processing {uploaded_file.name}..."):
-            custom_rules = get_custom_rules()
-            df = load_and_categorize(uploaded_file, custom_rules)
-            df['Source'] = uploaded_file.name
-            all_dfs.append(df)
-    
-    combined_df = pd.concat(all_dfs, ignore_index=True)
-    
-    st.success(f"✅ Loaded {len(combined_df)} rows from {len(uploaded_files)} file(s). {len(combined_df[combined_df['Category'] == 'Uncategorized'])} uncategorized (manual review).")
+    try:
+        all_dfs = []
+        for uploaded_file in uploaded_files:
+            with st.spinner(f"Processing {uploaded_file.name}..."):
+                custom_rules = get_custom_rules()
+                df = load_and_categorize(uploaded_file, custom_rules)
+                df['Source'] = uploaded_file.name
+                all_dfs.append(df)
+        
+        combined_df = pd.concat(all_dfs, ignore_index=True)
+        
+        st.success(f"✅ Loaded {len(combined_df)} rows from {len(uploaded_files)} file(s). {len(combined_df[combined_df['Category'] == 'Uncategorized'])} uncategorized (manual review).")
+    except ValueError as ve:
+        st.error(f"❌ {str(ve)}")
+        st.info("💡 **Quick Fix:** Make sure your CSV file has these exact column names: **Date**, **Description**, and **Amount**")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Error processing file: {str(e)}")
+        st.stop()
     
     with tab1:
         st.subheader("📊 Data Preview")
