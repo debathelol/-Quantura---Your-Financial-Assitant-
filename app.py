@@ -281,7 +281,6 @@ def generate_report(metrics, monthly, df):
 
 st.set_page_config(page_title="FinAutomate", layout="wide")
 st.title("🚀 Automated Financial Reporting & Analysis System")
-st.markdown("Upload your CSV/Excel → Auto-categorize 90% → Analyze → Report! (Reduces manual entry to ~10% tweaks.)")
 
 with st.sidebar:
     st.header("Quick Start")
