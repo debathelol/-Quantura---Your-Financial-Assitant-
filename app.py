@@ -775,22 +775,29 @@ def get_financial_context(df=None):
     if df is not None and not df.empty:
         # Aggregate spending by category
         if 'Category' in df.columns and 'Amount' in df.columns:
-            category_totals = df.groupby('Category')['Amount'].sum().to_dict()
-            context['category_spending'] = {k: float(v) for k, v in category_totals.items()}
-            context['total_spending'] = float(df['Amount'].sum())
+            try:
+                category_totals = df.groupby('Category')['Amount'].sum().to_dict()
+                context['category_spending'] = {k: float(v) for k, v in category_totals.items()}
+                context['total_spending'] = float(df['Amount'].sum())
+            except Exception as e:
+                print(f"Warning: Failed to aggregate spending data: {str(e)}")
         
         # Get date range
         if 'Date' in df.columns:
-            context['date_range'] = {
-                'start': str(df['Date'].min()),
-                'end': str(df['Date'].max())
-            }
+            try:
+                context['date_range'] = {
+                    'start': str(df['Date'].min()),
+                    'end': str(df['Date'].max())
+                }
+            except Exception as e:
+                print(f"Warning: Failed to extract date range: {str(e)}")
     
     # Get budgets
     try:
         budgets = get_budgets()
         context['budgets'] = {k: float(v) for k, v in budgets.items()}
-    except:
+    except Exception as e:
+        print(f"Warning: Failed to fetch budgets: {str(e)}")
         context['budgets'] = {}
     
     # Get savings goals
@@ -804,14 +811,19 @@ def get_financial_context(df=None):
                 'current': float(goal[3]),
                 'deadline': str(goal[4]) if goal[4] else None
             })
-    except:
+    except Exception as e:
+        print(f"Warning: Failed to fetch savings goals: {str(e)}")
         context['savings_goals'] = []
     
     return context
 
 def chat_with_ai(user_message, context, chat_history):
     """Chat with AI about financial data"""
-    client = init_openai_client()
+    try:
+        client = init_openai_client()
+    except Exception as e:
+        print(f"Error initializing OpenAI client: {str(e)}")
+        return "Sorry, I'm having trouble connecting to the AI service. Please check that the AI integration is properly configured and try again."
     
     system_prompt = f"""You are a helpful financial assistant for FinAutomate, a personal finance management app.
 
@@ -840,7 +852,7 @@ Guidelines:
     
     messages = [{"role": "system", "content": system_prompt}]
     
-    # Add chat history (last 5 messages for context)
+    # Add chat history (last 10 messages for context)
     for msg in chat_history[-10:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
     
@@ -856,7 +868,18 @@ Guidelines:
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Sorry, I encountered an error: {str(e)}"
+        error_msg = str(e)
+        print(f"Error calling OpenAI API: {error_msg}")
+        
+        # Provide user-friendly error messages
+        if "rate_limit" in error_msg.lower():
+            return "I'm getting a lot of requests right now. Please wait a moment and try again."
+        elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            return "There's a configuration issue with the AI service. Please contact support."
+        elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
+            return "I'm having trouble connecting to the AI service. Please check your internet connection and try again."
+        else:
+            return f"I encountered an unexpected error. Please try again. If the problem persists, contact support."
 
 st.set_page_config(page_title="FinAutomate", layout="wide")
 
