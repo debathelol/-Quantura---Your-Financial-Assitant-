@@ -1745,6 +1745,262 @@ if st.session_state.show_financial_tools:
             if not (is_affordable and down_payment_pct >= 20 and loan_tenure_years <= 5):
                 st.info(f"💰 Following the 20-5-10 rule could save you from financial stress and hidden costs!")
     
+    # Salary Expenditure Planner - Strategic Blueprints
+    with st.expander("💼 Salary Expenditure Planner - Build Your Financial Strategy", expanded=False):
+        st.markdown("**Choose your financial mindset and get a personalized budget allocation plan!**")
+        
+        # Plan Definitions
+        plans = {
+            "🛡️ Stable Plan": {
+                "subtitle": "The Safety Fortress",
+                "description": "Protect wealth, build security, avoid risk shocks.",
+                "ideal_for": "Students, new earners, people in uncertain environments.",
+                "allocations": {
+                    "Essentials (Rent, Food, Utilities)": (55, 60),
+                    "Savings / Emergency Fund": (20, 25),
+                    "Investments": (5, 10),
+                    "Personal / Discretionary": (10, 10)
+                },
+                "goal": "Predictable net worth growth with zero risk.",
+                "color": "#10b981"
+            },
+            "⚖️ Balanced Plan": {
+                "subtitle": "The Smart Builder",
+                "description": "Grow wealth while staying protected.",
+                "ideal_for": "Stable income, moderate risk tolerance, medium-term goals.",
+                "allocations": {
+                    "Essentials": (50, 50),
+                    "Savings / Cash Reserve": (15, 20),
+                    "Investments": (20, 25),
+                    "Personal / Learning / Growth": (5, 10)
+                },
+                "goal": "Steady growth + flexibility to handle life's shocks.",
+                "color": "#3b82f6"
+            },
+            "🚀 Aggressive Plan": {
+                "subtitle": "The Accelerator",
+                "description": "Maximize returns, accept volatility.",
+                "ideal_for": "High ambition, low dependency, long-term outlook.",
+                "allocations": {
+                    "Essentials": (40, 45),
+                    "Savings": (10, 15),
+                    "Investments": (35, 45),
+                    "Personal / Risk Ventures": (5, 10)
+                },
+                "goal": "Double or triple savings growth through compounding + reinvestment.",
+                "color": "#f59e0b"
+            }
+        }
+        
+        # Plan Selector
+        st.markdown("### 🎯 Select Your Financial Mindset")
+        selected_plan_name = st.radio(
+            "Choose the strategy that matches your goals:",
+            options=list(plans.keys()),
+            format_func=lambda x: x,
+            horizontal=True
+        )
+        
+        selected_plan = plans[selected_plan_name]
+        
+        # Display plan info
+        st.info(f"**{selected_plan['subtitle']}**: {selected_plan['description']}\n\n"
+                f"**Ideal For**: {selected_plan['ideal_for']}\n\n"
+                f"**Goal**: {selected_plan['goal']}")
+        
+        # Input Section
+        st.markdown("### 💰 Your Financial Details")
+        input_col1, input_col2 = st.columns(2)
+        
+        with input_col1:
+            monthly_salary_plan = st.number_input(
+                "💵 Monthly Take-Home Salary ($)", 
+                min_value=0.0, 
+                value=5000.0, 
+                step=500.0,
+                help="Your after-tax monthly income"
+            )
+        
+        with input_col2:
+            projection_months = st.slider(
+                "📅 Projection Period (Months)",
+                min_value=3,
+                max_value=24,
+                value=12,
+                step=1,
+                help="How far ahead do you want to project?"
+            )
+        
+        # Calculate allocations
+        st.markdown("### 📊 Recommended Budget Allocation")
+        
+        allocation_data = []
+        total_min = 0
+        total_max = 0
+        
+        for category, (min_pct, max_pct) in selected_plan['allocations'].items():
+            mid_pct = (min_pct + max_pct) / 2
+            min_amount = monthly_salary_plan * (min_pct / 100)
+            max_amount = monthly_salary_plan * (max_pct / 100)
+            mid_amount = monthly_salary_plan * (mid_pct / 100)
+            
+            allocation_data.append({
+                "Category": category,
+                "% Range": f"{min_pct}% - {max_pct}%",
+                "Monthly Amount": f"${min_amount:,.0f} - ${max_amount:,.0f}",
+                "Recommended": f"${mid_amount:,.0f}"
+            })
+            
+            total_min += min_pct
+            total_max += max_pct
+        
+        # Display allocation table
+        st.dataframe(pd.DataFrame(allocation_data), use_container_width=True, hide_index=True)
+        
+        # Create pie chart
+        fig_allocation = go.Figure(data=[go.Pie(
+            labels=[cat for cat in selected_plan['allocations'].keys()],
+            values=[(min_pct + max_pct) / 2 for min_pct, max_pct in selected_plan['allocations'].values()],
+            hole=0.4,
+            marker=dict(colors=['#ef4444', '#10b981', '#3b82f6', '#f59e0b']),
+            textinfo='label+percent',
+            hovertemplate='<b>%{label}</b><br>%{percent}<br>$%{value:.1f}%<extra></extra>'
+        )])
+        
+        fig_allocation.update_layout(
+            title=f'{selected_plan_name} - Budget Distribution',
+            showlegend=True,
+            height=400
+        )
+        
+        st.plotly_chart(fig_allocation, use_container_width=True)
+        
+        # Calculate projections
+        st.markdown("### 🔮 Financial Projections")
+        
+        # Get mid-range percentages
+        savings_pct = sum([mid for cat, (min_val, max_val) in selected_plan['allocations'].items() 
+                          if 'Savings' in cat or 'Cash' in cat for mid in [(min_val + max_val) / 2]])
+        investment_pct = sum([mid for cat, (min_val, max_val) in selected_plan['allocations'].items() 
+                             if 'Investment' in cat for mid in [(min_val + max_val) / 2]])
+        
+        monthly_savings = monthly_salary_plan * (savings_pct / 100)
+        monthly_investment = monthly_salary_plan * (investment_pct / 100)
+        
+        # Simple projections (no compounding for savings, 7% annual for investments)
+        total_savings_projected = monthly_savings * projection_months
+        
+        # Investment projection with compound growth (7% annual = ~0.58% monthly)
+        monthly_return = 0.07 / 12
+        total_investment_projected = 0
+        for month in range(projection_months):
+            total_investment_projected = (total_investment_projected + monthly_investment) * (1 + monthly_return)
+        
+        investment_growth = total_investment_projected - (monthly_investment * projection_months)
+        total_wealth_projected = total_savings_projected + total_investment_projected
+        
+        # Display metrics
+        proj_col1, proj_col2, proj_col3, proj_col4 = st.columns(4)
+        
+        with proj_col1:
+            st.metric("💰 Savings Goal", f"${total_savings_projected:,.0f}", 
+                     delta=f"{projection_months} months")
+        with proj_col2:
+            st.metric("📈 Investments", f"${total_investment_projected:,.0f}",
+                     delta=f"+${investment_growth:,.0f} growth")
+        with proj_col3:
+            st.metric("🎯 Total Wealth", f"${total_wealth_projected:,.0f}")
+        with proj_col4:
+            emergency_months = total_savings_projected / (monthly_salary_plan * 0.5) if monthly_salary_plan > 0 else 0
+            st.metric("🛡️ Safety Net", f"{emergency_months:.1f} months",
+                     help="How many months of essential expenses covered")
+        
+        # Projection chart
+        months_array = list(range(projection_months + 1))
+        savings_trajectory = [monthly_savings * m for m in months_array]
+        investment_trajectory = []
+        
+        for m in months_array:
+            inv_val = 0
+            for month in range(m):
+                inv_val = (inv_val + monthly_investment) * (1 + monthly_return)
+            investment_trajectory.append(inv_val)
+        
+        wealth_trajectory = [s + i for s, i in zip(savings_trajectory, investment_trajectory)]
+        
+        fig_projection = go.Figure()
+        
+        fig_projection.add_trace(go.Scatter(
+            x=months_array,
+            y=wealth_trajectory,
+            fill='tozeroy',
+            name='Total Wealth',
+            line=dict(color=selected_plan['color'], width=3),
+            hovertemplate='<b>Month %{x}</b><br>Total: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_projection.add_trace(go.Scatter(
+            x=months_array,
+            y=savings_trajectory,
+            name='Savings',
+            line=dict(color='#10b981', width=2, dash='dash'),
+            hovertemplate='<b>Month %{x}</b><br>Savings: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_projection.add_trace(go.Scatter(
+            x=months_array,
+            y=investment_trajectory,
+            name='Investments',
+            line=dict(color='#3b82f6', width=2, dash='dot'),
+            hovertemplate='<b>Month %{x}</b><br>Investments: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_projection.update_layout(
+            title=f'📈 {projection_months}-Month Wealth Growth Projection',
+            xaxis_title='Months',
+            yaxis_title='Amount ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=450,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_projection, use_container_width=True)
+        
+        # AI-Style Insights
+        st.markdown("### 💡 Smart Insights")
+        insight_col1, insight_col2 = st.columns(2)
+        
+        with insight_col1:
+            if savings_pct >= 20:
+                st.success(f"✅ **Excellent saving rate!** At {savings_pct:.0f}% savings, you're building a strong financial foundation.")
+            elif savings_pct >= 15:
+                st.info(f"💪 **Good progress!** Your {savings_pct:.0f}% savings rate is solid. Consider pushing to 20% for faster growth.")
+            else:
+                st.warning(f"⚠️ **Room for improvement**: {savings_pct:.0f}% savings might limit emergency fund growth. Aim for 15-20%.")
+            
+            # Emergency fund timeline
+            target_emergency_fund = monthly_salary_plan * 6  # 6 months of salary
+            months_to_goal = target_emergency_fund / monthly_savings if monthly_savings > 0 else 0
+            if months_to_goal <= 12:
+                st.success(f"🎯 You'll reach a 6-month emergency fund in just **{months_to_goal:.1f} months**!")
+            else:
+                st.info(f"📅 At your current rate, you'll build a 6-month safety net in **{months_to_goal:.1f} months** (~{months_to_goal/12:.1f} years).")
+        
+        with insight_col2:
+            # ROI comparison
+            if investment_pct > 0:
+                roi_percentage = (investment_growth / (monthly_investment * projection_months) * 100) if monthly_investment > 0 else 0
+                st.success(f"📊 Your investments could grow by **{roi_percentage:.1f}%** over {projection_months} months with 7% annual returns!")
+            
+            # Plan comparison hint
+            if selected_plan_name == "🛡️ Stable Plan":
+                st.info("💭 **Tip**: Once you build a 6-month emergency fund, consider switching to Balanced Plan for higher growth!")
+            elif selected_plan_name == "⚖️ Balanced Plan":
+                st.info("💭 **Tip**: Stable job? Consider Aggressive Plan to maximize long-term wealth. Uncertain income? Stable Plan offers more protection.")
+            else:
+                st.info("💭 **Tip**: Make sure you have at least 3 months emergency fund before staying aggressive!")
+    
     st.markdown("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])

@@ -14,7 +14,7 @@ The application uses Streamlit for its frontend, enabling rapid development of i
 ## Recent Implementation Updates
 
 ### November 9, 2025 - Financial Tools Section
-Added two powerful financial calculators with interactive visualizations:
+Added three powerful financial calculators with interactive visualizations:
 
 1. **Magic of Compounding Calculator**:
    - Compound interest calculations with monthly contributions
@@ -35,11 +35,24 @@ Added two powerful financial calculators with interactive visualizations:
    - Smart recommendations based on rule violations
    - Helps users avoid car loan debt traps
 
-Both calculators feature:
+3. **Salary Expenditure Planner - Strategic Blueprints**:
+   - Three proven financial mindsets: Stable (Safety Fortress), Balanced (Smart Builder), Aggressive (Accelerator)
+   - Personalized budget allocation recommendations based on selected strategy
+   - **Stable Plan**: 55-60% essentials, 20-25% savings, 5-10% investments - for new earners and uncertain environments
+   - **Balanced Plan**: 50% essentials, 15-20% savings, 20-25% investments - for moderate risk tolerance and steady growth
+   - **Aggressive Plan**: 40-45% essentials, 10-15% savings, 35-45% investments - for maximizing returns with long-term outlook
+   - Interactive allocation breakdown with percentage ranges and dollar amounts
+   - Plotly donut chart visualization of budget distribution
+   - Financial projections with 4 KPI metrics: Savings Goal, Investments (with 7% growth), Total Wealth, Safety Net
+   - Multi-trace projection chart showing wealth growth trajectory over 3-24 months
+   - AI-style smart insights with emergency fund timeline and plan-specific recommendations
+   - Helps users choose the right strategy for their financial goals and situation
+
+All calculators feature:
 - Real-time calculations with instant updates
 - Professional Plotly visualizations
 - Comprehensive KPI metrics
-- User-friendly 3-column layouts
+- User-friendly layouts
 - Expandable/collapsible sections
 - Controlled by sidebar toggle: "🪄 Financial Tools"
 

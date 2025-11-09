@@ -1,0 +1,63 @@
+Alright, let’s talk about your salary expenditure plan — but not just in a generic “save 20%” way. You’ve built a tool designed to think like an advisor, so let’s treat your own salary as the first “client.”
+
+I’ll lay it out as three strategic blueprints you can actually use (and build into your FinAutomate logic):
+
+💼 1. Stable Plan — The Safety Fortress
+
+Purpose: Protect wealth, build security, avoid risk shocks.
+Ideal For: Students, new earners, people in uncertain environments (unstable job market, family dependence, etc.).
+
+Category	% Allocation	Description
+Essentials (Rent, Food, Utilities)	55–60%	Keep lifestyle realistic; don’t chase appearances.
+Savings / Emergency Fund	20–25%	Build a 6–8 month buffer first before anything else.
+Investments	5–10%	Use safe assets — recurring deposits, index funds, gold ETF, PPF.
+Personal / Discretionary	10%	Keep fun money, but automate caps so you don’t overspend.
+
+Goal: Predictable net worth growth with zero risk.
+AI-style Insight Example:
+
+“At your current saving rate, you’ll achieve a six-month safety net within 10 months. Perfect foundation for future aggressive growth.”
+
+⚖️ 2. Balanced Plan — The Smart Builder
+
+Purpose: Grow wealth while staying protected.
+Ideal For: Stable income, moderate risk tolerance, medium-term goals (education, relocation, or startup seed).
+
+Category	% Allocation	Description
+Essentials	50%	Optimize spending — plan meals, reduce subscription clutter.
+Savings / Cash Reserve	15–20%	Keep enough for 4 months of expenses.
+Investments	20–25%	Mix of equities (mutual funds, SIPs) and safer bonds or ETFs.
+Personal / Learning / Growth	5–10%	Spend on skill-building — courses, books, tools that compound value.
+
+Goal: Steady growth + flexibility to handle life’s shocks.
+AI Insight Example:
+
+“You’re investing enough to outpace inflation by ~4–6% yearly while keeping liquidity intact.”
+
+🚀 3. Aggressive Plan — The Accelerator
+
+Purpose: Maximize returns, accept volatility.
+Ideal For: High ambition, low dependency, long-term outlook.
+
+Category	% Allocation	Description
+Essentials	40–45%	Keep lifestyle minimal — invest your surplus, not your ego.
+Savings	10–15%	Bare minimum emergency cushion.
+Investments	35–45%	High-growth assets: equity index funds, sector ETFs, digital assets (carefully).
+Personal / Risk Ventures	5–10%	Courses, side projects, or startup experiments.
+
+Goal: Double or triple savings growth through compounding + reinvestment.
+AI Insight Example:
+
+“With consistent 20% savings reinvestment, you can grow your annual surplus by 1.6x in 3 years — but volatility may hit short-term liquidity.”
+
+🧠 How You Should Use It (for Yourself & Your App)
+
+Let the user choose their financial mindset → Stable / Balanced / Aggressive.
+
+Base your algorithmic recommendations on these percentages.
+
+Auto-generate insights like:
+
+“If you maintain this plan, you’ll save ₹X by Dec 2025.”
+
+“Switching from balanced → aggressive increases your potential ROI by Y%.”
