@@ -1351,18 +1351,6 @@ st.markdown("""
 
 <div id="home" class="section-anchor"></div>
 
-<div class="nav-container">
-    <div class="nav-menu">
-        <a href="#home" class="nav-item">🏠 Home</a>
-        <a href="#upload" class="nav-item">📤 Upload Data</a>
-        <a href="#currency" class="nav-item">💱 Currency</a>
-        <a href="#tools" class="nav-item">🪄 Financial Tools</a>
-        <a href="#analysis" class="nav-item">📊 Analysis</a>
-        <a href="#budget" class="nav-item">💰 Budget</a>
-        <a href="#goals" class="nav-item">🎯 Savings Goals</a>
-    </div>
-</div>
-
 <div class="main-header">
     <h1 class="header-title">🚀 FinAutomate</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
@@ -1392,6 +1380,18 @@ st.markdown("""
             <div class="feature-icon">🌸</div>
             <div class="feature-text">Discover Patterns</div>
         </div>
+    </div>
+</div>
+
+<div class="nav-container">
+    <div class="nav-menu">
+        <a href="#home" class="nav-item">🏠 Home</a>
+        <a href="#upload" class="nav-item">📤 Upload Data</a>
+        <a href="#currency" class="nav-item">💱 Currency</a>
+        <a href="#tools" class="nav-item">🪄 Financial Tools</a>
+        <a href="#analysis" class="nav-item">📊 Analysis</a>
+        <a href="#budget" class="nav-item">💰 Budget</a>
+        <a href="#goals" class="nav-item">🎯 Savings Goals</a>
     </div>
 </div>
 """, unsafe_allow_html=True)
