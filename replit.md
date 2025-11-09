@@ -7,7 +7,7 @@ This is a comprehensive dual-format financial analysis application built with St
 
 The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
 
-**Last Updated**: November 9, 2025 - Phase 2 Complete + Critical Bug Fixes
+**Last Updated**: November 9, 2025 - Phase 2 Complete + Personalized Dashboard
 
 # User Preferences
 
@@ -147,6 +147,20 @@ Uses fuzzy column matching to identify data type:
    - Time interval regularity (monthly, weekly, quarterly)
    - Next payment prediction with confidence scoring
    - Fixed critical bug: Now properly detects negative expense amounts
+
+### Personalized Dashboard (November 9, 2025):
+**NEW: Customizable Dashboard with Enhanced Animations**
+- **Dashboard Personalization**: Sidebar toggles to show/hide sections:
+  - 📊 Company Reports (corporate financial analysis)
+  - 💰 Personal Spending (personal finance tracking)
+  - 💱 Currency Converter (multi-currency tools)
+- **Enhanced Animations**: 
+  - Smooth slide-in effects for sections
+  - Fade-up animations for content
+  - Scale-in animations for metrics
+  - Professional transitions throughout
+- **Session Persistence**: Preferences saved during your session
+- **Better UX**: Only show what you need, cleaner interface
 
 ### Critical Bug Fixes (November 9, 2025):
 1. **Net Profit Calculation Fix**: Fixed financial impossibility where Net Profit was higher than Total Income
