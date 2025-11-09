@@ -953,6 +953,20 @@ st.markdown("""
         z-index: 1;
     }
     
+    .header-tagline {
+        color: #fbbf24;
+        text-align: center;
+        margin-top: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
+        font-style: italic;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 2px 10px rgba(251, 191, 36, 0.5);
+        animation: fadeInUp 1s ease-out 0.5s both;
+    }
+    
     .features-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1277,6 +1291,7 @@ st.markdown("""
 <div class="main-header">
     <h1 class="header-title">🚀 FinAutomate</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
+    <p class="header-tagline">✨ Let's make your life hassle-free</p>
     <div class="features-grid">
         <div class="feature-card">
             <div class="feature-icon">📊</div>
