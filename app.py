@@ -18,6 +18,8 @@ import psycopg2
 import os
 from datetime import datetime
 from ui_components.charts import fig_to_png_download
+from openai import OpenAI
+import json
 
 def get_db_connection():
     return psycopg2.connect(os.environ.get('DATABASE_URL'))
@@ -758,6 +760,104 @@ def generate_report(metrics, monthly, df):
     
     return chart_url, pdf_buffer
 
+# AI Chatbot Functions
+def init_openai_client():
+    """Initialize OpenAI client with Replit AI Integrations"""
+    return OpenAI(
+        api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
+        base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+    )
+
+def get_financial_context(df=None):
+    """Get financial data context for AI chatbot"""
+    context = {}
+    
+    if df is not None and not df.empty:
+        # Aggregate spending by category
+        if 'Category' in df.columns and 'Amount' in df.columns:
+            category_totals = df.groupby('Category')['Amount'].sum().to_dict()
+            context['category_spending'] = {k: float(v) for k, v in category_totals.items()}
+            context['total_spending'] = float(df['Amount'].sum())
+        
+        # Get date range
+        if 'Date' in df.columns:
+            context['date_range'] = {
+                'start': str(df['Date'].min()),
+                'end': str(df['Date'].max())
+            }
+    
+    # Get budgets
+    try:
+        budgets = get_budgets()
+        context['budgets'] = {k: float(v) for k, v in budgets.items()}
+    except:
+        context['budgets'] = {}
+    
+    # Get savings goals
+    try:
+        goals = get_savings_goals()
+        context['savings_goals'] = []
+        for goal in goals:
+            context['savings_goals'].append({
+                'name': goal[1],
+                'target': float(goal[2]),
+                'current': float(goal[3]),
+                'deadline': str(goal[4]) if goal[4] else None
+            })
+    except:
+        context['savings_goals'] = []
+    
+    return context
+
+def chat_with_ai(user_message, context, chat_history):
+    """Chat with AI about financial data"""
+    client = init_openai_client()
+    
+    system_prompt = f"""You are a helpful financial assistant for FinAutomate, a personal finance management app.
+
+You help users understand their finances, provide budget advice, and guide them to use the app's calculators.
+
+Available Tools in FinAutomate:
+1. Magic of Compounding Calculator - For investment growth projections
+2. Car Purchase Calculator (20-5-10 Rule) - For car affordability checks
+3. Salary Expenditure Planner - For budget allocation strategies
+4. Retirement Planning Calculator - For retirement readiness analysis
+5. Debt Payoff Planner - For comparing debt reduction strategies
+6. Investment Portfolio Analyzer - For portfolio diversification
+7. Rent vs Buy Calculator - For housing decisions
+
+Financial Context:
+{json.dumps(context, indent=2)}
+
+Guidelines:
+- Be concise and friendly
+- Use simple, everyday language
+- Provide specific insights based on the user's data
+- Recommend relevant calculators when appropriate
+- Focus on practical financial advice
+- Use emojis sparingly for friendliness
+"""
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Add chat history (last 5 messages for context)
+    for msg in chat_history[-10:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    
+    # Add current user message
+    messages.append({"role": "user", "content": user_message})
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=500
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Sorry, I encountered an error: {str(e)}"
+
 st.set_page_config(page_title="FinAutomate", layout="wide")
 
 # Dashboard Customization State
@@ -769,6 +869,10 @@ if 'show_currency_section' not in st.session_state:
     st.session_state.show_currency_section = True
 if 'show_financial_tools' not in st.session_state:
     st.session_state.show_financial_tools = True
+if 'show_ai_chat' not in st.session_state:
+    st.session_state.show_ai_chat = True
+if 'chat_messages' not in st.session_state:
+    st.session_state.chat_messages = []
 
 st.markdown("""
 <style>
@@ -1530,6 +1634,7 @@ st.markdown("""
         <a href="#home" class="nav-item">🏠 Home</a>
         <a href="#upload" class="nav-item">📤 Upload Data</a>
         <a href="#currency" class="nav-item">💱 Currency</a>
+        <a href="#aichat" class="nav-item">🤖 AI Chat</a>
         <a href="#tools" class="nav-item">🪄 Financial Tools</a>
         <a href="#analysis" class="nav-item">📊 Analysis</a>
         <a href="#budget" class="nav-item">💰 Budget</a>
@@ -1564,6 +1669,12 @@ with st.sidebar:
         "🪄 Financial Tools",
         value=st.session_state.show_financial_tools,
         help="Show magic of compounding and other financial calculators"
+    )
+    
+    st.session_state.show_ai_chat = st.checkbox(
+        "🤖 AI Chat",
+        value=st.session_state.show_ai_chat,
+        help="Chat with AI financial assistant"
     )
     
     st.divider()
@@ -3122,6 +3233,49 @@ if st.session_state.show_financial_tools:
                 st.warning("⚠️ **Short Timeline**: Buying has high upfront costs. Consider renting if you might move soon!")
             elif analysis_years >= 10 and buy_net_position > rent_net_position:
                 st.success(f"🎯 **Long-Term Win**: With {analysis_years}+ years, buying builds significant wealth!")
+    
+    st.markdown("---")
+
+# AI Chat Section
+if st.session_state.show_ai_chat:
+    st.markdown('<div class="section-anchor" id="aichat"></div>', unsafe_allow_html=True)
+    st.header("🤖 AI Financial Assistant")
+    st.markdown("**Ask me anything about your finances, budgets, or use our calculators!**")
+    
+    # Display chat history
+    for message in st.session_state.chat_messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
+    # Chat input
+    if prompt := st.chat_input("Ask me about your finances..."):
+        # Add user message to chat history
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Get financial context (will use uploaded data if available)
+        try:
+            # Try to get context from uploaded data
+            context = get_financial_context()
+        except:
+            context = get_financial_context()
+        
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                response = chat_with_ai(prompt, context, st.session_state.chat_messages)
+                st.markdown(response)
+        
+        # Add assistant response to chat history
+        st.session_state.chat_messages.append({"role": "assistant", "content": response})
+    
+    # Clear chat button
+    if st.button("🗑️ Clear Chat History"):
+        st.session_state.chat_messages = []
+        st.rerun()
     
     st.markdown("---")
 
