@@ -149,6 +149,28 @@ def delete_savings_goal(goal_id):
     except Exception as e:
         return False, str(e)
 
+def get_exchange_rates():
+    """Returns exchange rates to USD (as of common reference rates)"""
+    return {
+        'USD': 1.0,
+        'EUR': 1.08,
+        'GBP': 1.27,
+        'CAD': 0.72,
+        'AUD': 0.65,
+        'JPY': 0.0067,
+        'CNY': 0.14,
+        'INR': 0.012,
+        'MXN': 0.058,
+        'BRL': 0.20
+    }
+
+def convert_to_usd(amount, from_currency):
+    """Convert amount from given currency to USD"""
+    rates = get_exchange_rates()
+    if from_currency in rates:
+        return amount * rates[from_currency]
+    return amount
+
 def detect_data_type(df):
     """Detect if data is personal finance transactions or corporate overview"""
     columns_lower = [col.lower() for col in df.columns]
@@ -168,7 +190,7 @@ def detect_data_type(df):
     else:
         return 'unknown'
 
-def load_and_categorize(uploaded_file, custom_rules=None):
+def load_and_categorize(uploaded_file, custom_rules=None, currency='USD'):
     if uploaded_file.name.endswith('.csv'):
         df = pd.read_csv(uploaded_file)
     else:
@@ -213,6 +235,11 @@ def load_and_categorize(uploaded_file, custom_rules=None):
     df['Category'] = df['Description'].apply(categorize)
     df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce')
     df = df[df['Amount'].notna()]
+    
+    # Apply currency conversion
+    if currency != 'USD':
+        df['Amount'] = df['Amount'].apply(lambda x: convert_to_usd(x, currency))
+    
     df['data_type'] = 'personal_finance'
     
     return df
@@ -958,6 +985,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
+    st.header("🌍 Currency Settings")
+    currencies = list(get_exchange_rates().keys())
+    selected_currency = st.selectbox(
+        "Data Currency",
+        currencies,
+        index=0,
+        help="Select the currency of ALL uploaded files. All files must be in the same currency. Amounts will be converted to USD for analysis."
+    )
+    if selected_currency != 'USD':
+        st.warning(f"⚠️ Conversion: {selected_currency} → USD (rate: {get_exchange_rates()[selected_currency]})")
+        st.caption("All uploaded files must be in the same currency")
+    else:
+        st.success("✓ Data already in USD")
+    
+    st.divider()
     st.header("Quick Start")
     st.markdown("""
     - **Sample Data**: Use sample_data.csv with Date (YYYY-MM-DD), Description, Amount.
@@ -1024,7 +1066,7 @@ if uploaded_files:
         for uploaded_file in uploaded_files:
             with st.spinner(f"Processing {uploaded_file.name}..."):
                 custom_rules = get_custom_rules()
-                df = load_and_categorize(uploaded_file, custom_rules)
+                df = load_and_categorize(uploaded_file, custom_rules, selected_currency)
                 df['Source'] = uploaded_file.name
                 all_dfs.append(df)
                 data_types.append(df['data_type'].iloc[0] if 'data_type' in df.columns else 'unknown')
@@ -1185,6 +1227,10 @@ if uploaded_files:
         
         if st.button("🔍 Analyze & Generate Report"):
             metrics, monthly, filtered_df = analyze_finances(combined_df, date_range)
+            
+            # Show currency conversion notice
+            if selected_currency != 'USD':
+                st.info(f"💱 All values displayed in USD (converted from {selected_currency} at rate {get_exchange_rates()[selected_currency]})")
             
             if len(filtered_df) == 0:
                 st.warning("⚠️ No data found in the selected date range. Please adjust your date filters.")
