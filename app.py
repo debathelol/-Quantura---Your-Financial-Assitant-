@@ -280,14 +280,127 @@ def generate_report(metrics, monthly, df):
     return chart_url, pdf_buffer
 
 st.set_page_config(page_title="FinAutomate", layout="wide")
-st.title("🚀 Automated Financial Reporting & Analysis System")
 
 st.markdown("""
-<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; margin-bottom: 2rem;'>
-    <h3 style='color: white; margin: 0; text-align: center;'>Transform Your Financial Data into Actionable Insights</h3>
-    <p style='color: #f0f0f0; text-align: center; margin-top: 1rem; font-size: 1.1rem;'>
-        📊 Auto-Categorize Transactions • 💰 Track Budgets • 📈 Analyze Trends • 🥧 Visualize Expenses • 📅 Compare Years • 🌸 Discover Patterns
-    </p>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    .main-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #ec4899 100%);
+        padding: 3rem 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 20px 60px rgba(124, 58, 237, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 4s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    
+    .header-title {
+        color: white;
+        font-size: 3rem;
+        font-weight: 700;
+        text-align: center;
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .header-subtitle {
+        color: rgba(255,255,255,0.95);
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 1.3rem;
+        font-weight: 300;
+        font-family: 'Inter', sans-serif;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .feature-card {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .feature-card:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .feature-text {
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+</style>
+
+<div class="main-header">
+    <h1 class="header-title">🚀 FinAutomate</h1>
+    <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <div class="feature-text">Auto-Categorize</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <div class="feature-text">Track Budgets</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <div class="feature-text">Analyze Trends</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🥧</div>
+            <div class="feature-text">Visualize Data</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <div class="feature-text">Compare Years</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🌸</div>
+            <div class="feature-text">Discover Patterns</div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
