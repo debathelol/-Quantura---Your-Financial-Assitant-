@@ -484,6 +484,3 @@ if uploaded_files:
                 st.metric(season, f"${amount:,.2f}")
         else:
             st.info("No seasonal data available.")
-
-st.markdown("---")
-st.markdown("Built with ❤️ for your CV. GitHub it next?")
