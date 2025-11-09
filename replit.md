@@ -1,13 +1,6 @@
 # Overview
 
-This is a comprehensive dual-format financial analysis application built with Streamlit and PostgreSQL. The app intelligently detects and analyzes two types of data:
-
-1. **Personal Finance Transactions**: Upload transaction data (CSV or Excel) with automatic categorization, budget tracking, expense breakdowns, and forecasting
-2. **Corporate Overview Data**: Analyze company financial metrics including revenue trends, net income, market cap, and employee growth
-
-The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
-
-**Last Updated**: November 9, 2025 - Phase 2 Complete + Personalized Dashboard
+This is a comprehensive dual-format financial analysis application built with Streamlit and PostgreSQL. The app intelligently detects and analyzes two types of data: Personal Finance Transactions and Corporate Overview Data. Its main purpose is to provide users with tools for financial tracking, forecasting, and reporting, aiming to simplify financial management for individuals and offer insightful analytics for businesses. Key capabilities include automatic transaction categorization, budget tracking, financial forecasting, and multi-currency support for personal finance, alongside revenue trend analysis, financial ratio calculation, and competitor comparison for corporate data. The project ambitions include providing a user-friendly and powerful platform for diverse financial analysis needs.
 
 # User Preferences
 
@@ -15,232 +8,105 @@ Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## Frontend Framework
-**Decision**: Streamlit  
-**Rationale**: Streamlit provides a rapid, Python-native way to build interactive data applications without requiring separate frontend code. This allows for quick prototyping and seamless integration with data analysis libraries.
+## UI/UX Decisions
+The application uses Streamlit for its frontend, enabling rapid development of interactive data applications with a Python-native approach. The design prioritizes clarity and user-friendliness, featuring a tabbed interface for different analysis views and a customizable dashboard with smooth animations (slide-in, fade-up, scale-in) for enhanced user experience. Visualizations are generated using Matplotlib, Seaborn, and Plotly, ensuring high-quality, interactive charts for better data interpretation.
 
-**Pros**:
-- Minimal boilerplate code
-- Native Python integration
-- Built-in caching and state management
-- Automatic UI generation from Python code
+## Recent Implementation Updates
 
-**Cons**:
-- Limited customization compared to traditional web frameworks
-- Single-user session model
+### November 9, 2025 - Financial Tools Section
+Added two powerful financial calculators with interactive visualizations:
 
-## Data Processing Pipeline
-**Decision**: Pandas-based ETL with automated categorization  
-**Rationale**: The application uses Pandas for data ingestion and transformation, with a rule-based categorization system using regex patterns to automatically classify transactions.
+1. **Magic of Compounding Calculator**:
+   - Compound interest calculations with monthly contributions
+   - Supports multiple compounding frequencies (Daily, Monthly, Quarterly, Annually)
+   - Optional inflation adjustment for real value calculations
+   - Interactive Plotly charts showing wealth growth trajectory
+   - Rule of 72 for doubling time calculations
+   - Year-by-year breakdown tables
+   - Smart insights showing ROI and crossover points
 
-**Key Components**:
-1. **Data Loading**: Supports both CSV and Excel file formats
-2. **Date Parsing**: Converts date fields with error handling
-3. **Auto-categorization**: Rule-based pattern matching on transaction descriptions
-4. **Data Validation**: Removes invalid numeric amounts and missing dates
+2. **Smart Car Purchase Calculator - 20-5-10 Rule**:
+   - Implements financial best practice: 20% down, 5-year max loan, EMI ≤ 10% salary
+   - Accurate EMI calculations using standard formula
+   - **Edge case handling**: Properly handles zero-interest loans with simple amortization
+   - Color-coded affordability verdicts (Green/Yellow/Red)
+   - Interactive Plotly charts showing EMI vs salary budget
+   - Complete payment breakdowns with total cost analysis
+   - Smart recommendations based on rule violations
+   - Helps users avoid car loan debt traps
 
-**Categories Detected**:
-- Income (salary, freelance, revenue)
-- Expense (rent, utilities, food, transport, bills)
-- Investment (stocks, crypto)
-- Uncategorized (fallback)
+Both calculators feature:
+- Real-time calculations with instant updates
+- Professional Plotly visualizations
+- Comprehensive KPI metrics
+- User-friendly 3-column layouts
+- Expandable/collapsible sections
+- Controlled by sidebar toggle: "🪄 Financial Tools"
 
-## Time Series Analysis
-**Decision**: Monthly aggregation with period-based grouping  
-**Rationale**: Financial data is most meaningful when analyzed over monthly periods, allowing users to identify spending patterns and track trends.
+## Technical Implementations
+- **Intelligent Data Detection**: Automatically identifies incoming data as either "Personal Finance Transactions" (requiring `Date`, `Description`, `Amount`) or "Corporate Overview Data" (requiring `Year`, `Revenue`, `Net Income`, `Market Cap`, `Employees`) using fuzzy column matching.
+- **Data Processing**: Leverages Pandas for ETL (Extract, Transform, Load), including robust date parsing, rule-based auto-categorization using regex, and data validation. Supports CSV and Excel formats.
+- **Time Series Analysis**: Aggregates financial data monthly using Pandas Period functionality to identify spending patterns and track trends.
+- **Financial Forecasting**: Employs Scikit-learn's Linear Regression for basic, interpretable predictions of future income/expense trends.
+- **Database Persistence**: PostgreSQL with psycopg2 stores user-defined custom categorization rules, budget settings, and savings goals, ensuring data persistence across sessions.
+- **Report Generation**: Uses ReportLab for generating professional, exportable PDF reports for both personal and corporate analysis, including structured layouts and tables.
+- **Multi-Currency Support**: Supports 10 currencies (USD, EUR, GBP, CAD, AUD, JPY, CNY, INR, MXN, BRL) with automatic conversion using hardcoded exchange rates.
+- **Financial Tools**: Includes a "Magic of Compounding Calculator" with interactive visualizations and a "Smart Car Purchase Calculator" based on the 20-5-10 rule for affordability checks and recommendations.
+- **Smart Insights**: Provides automated financial highlights such as biggest expense detection, month-over-month spending change alerts, unusual large transaction detection, and savings rate calculations.
+- **Recurring Transaction Detection**: Identifies subscriptions and recurring bills based on transaction description, amount consistency, and time interval regularity.
 
-**Approach**:
-- Convert transactions to monthly periods using Pandas Period functionality
-- Group by month and category for aggregated views
-- Fill missing months to maintain continuous time series
+## Feature Specifications
+- **Personal Finance**:
+    - Automatic categorization (Income, Expense, Investment, Uncategorized)
+    - Custom categorization rules
+    - Budget tracking with visual alerts
+    - Expense subcategorization
+    - Savings goals tracker
+    - Multi-currency support
+    - Monthly spending trends, category breakdowns, income vs. expense comparisons
+    - CSV/Excel export of filtered data and monthly summaries
+- **Corporate Analysis**:
+    - Revenue trends, income comparisons, employee growth
+    - Year-over-year metrics
+    - Financial ratios (profit margin, revenue per employee, revenue growth %, employee growth %)
+    - Competitor comparison with multi-company side-by-side metrics and interactive charts
+    - Downloadable PDF reports
+- **General**:
+    - Customizable dashboard
+    - Chart PNG downloads
+    - Date range filtering
+    - Multi-file upload
 
-## Forecasting Capability
-**Decision**: Scikit-learn Linear Regression  
-**Rationale**: Simple linear models provide interpretable predictions for basic financial forecasting without requiring complex machine learning infrastructure.
-
-**Use Case**: Project future income/expense trends based on historical patterns
-
-## Visualization Strategy
-**Decision**: Matplotlib and Seaborn  
-**Rationale**: These libraries provide publication-quality visualizations that integrate seamlessly with Streamlit and Pandas.
-
-**Expected Visualizations**:
-- Monthly spending trends
-- Category breakdowns
-- Income vs. expense comparisons
-
-## Report Generation
-**Decision**: ReportLab for PDF export  
-**Rationale**: Users need exportable reports for record-keeping and sharing.
-
-**Components**:
-- PDF generation with structured layouts
-- Tables for transaction summaries
-- Integration with analysis results
-
-## Database Persistence
-**Decision**: PostgreSQL with psycopg2  
-**Rationale**: User-defined rules and budgets need to persist across sessions. PostgreSQL provides reliable, ACID-compliant storage for these critical settings.
-
-**Database Schema**:
-- `custom_rules`: Stores user-defined keyword-to-category mappings
-- `budgets`: Stores budget amounts per category with timestamps
-
-**Features**:
-- Custom categorization rules persist across sessions
-- Budget settings persist and track spending against limits
-- Duplicate keyword prevention
-- Error handling with user-visible feedback
-
-## Dual-Format Data Support (November 2025)
-
-### Intelligent Data Detection
-The app now automatically detects and handles two distinct data formats:
-
-**1. Personal Finance Transactions**
-- Required columns: `Date`, `Description`, `Amount`
-- Features: Auto-categorization, budgets, custom rules, expense breakdown, seasonal analysis
-- Use case: Bank statements, credit card transactions, personal spending tracking
-
-**2. Corporate Overview Data**
-- Detected columns: `Year`, `Revenue`, `Net Income`, `Market Cap`, `Employees`, etc.
-- Features: Revenue trends, income comparisons, employee growth, year-over-year metrics
-- Use case: Company financial reports, brand performance analysis, corporate benchmarking
-
-### Detection Algorithm
-Uses fuzzy column matching to identify data type:
-- Corporate indicators: year, revenue, net income, market cap, employees, ceo
-- Personal finance indicators: date, description, amount, transaction
-- Threshold: 3+ matches for corporate, 2+ for personal finance
-
-### Separate Analysis Paths
-- Data is NOT mixed - corporate and personal finance files are analyzed independently
-- Each type gets custom UI, visualizations, and metrics
-- Database features (custom rules, budgets) only apply to personal finance data
-
-## Recent Enhancements (November 2025)
-
-### Phase 2 - Advanced Features (Completed Nov 9, 2025):
-1. **Chart PNG Downloads**: All charts now have high-quality 300 DPI PNG download buttons using fig_to_png_download() helper
-2. **Savings Goals Tracker**: Database-backed feature with savings_goals table, progress bars, monthly savings calculation, and CRUD operations
-3. **Multi-Currency Support**: 10 currencies supported (USD, EUR, GBP, CAD, AUD, JPY, CNY, INR, MXN, BRL) with automatic conversion using hardcoded exchange rates
-4. **Enhanced Forecasting**: 3-12 month projections with interactive what-if scenarios for income/expense changes, visual charts with surplus/deficit shading
-5. **Competitor Comparison**: Multi-company side-by-side metrics table and interactive Plotly revenue chart for corporate data analysis
-6. **Financial Ratios**: Automated calculation of profit margin, revenue per employee, revenue growth %, and employee growth % for corporate data
-7. **Corporate PDF Reports**: Downloadable PDF reports with company metrics, financial ratios, and formatted tables using ReportLab
-8. **Interactive Plotly Charts**: Company comparison chart converted to Plotly with hover tooltips, zoom, pan, and legend toggle capabilities
-
-**Implementation Notes:**
-- Hybrid approach: Plotly used for high-value interactive charts (company comparison), matplotlib retained for others with PNG downloads
-- Multi-currency has known limitation: single currency selector applies to all files in session (documented with UI warnings)
-- Savings goals persist in PostgreSQL database alongside custom_rules and budgets tables
-
-### Phase 1 - Export & Intelligence Features (Completed Nov 9, 2025):
-1. **CSV/Excel Export**: Download filtered transaction data and monthly summaries in CSV or Excel format with multi-sheet support
-2. **Smart Insights Panel**: Automated financial highlights including:
-   - Biggest expense detection
-   - Month-over-month spending change alerts (>20% changes)
-   - Unusual large transaction detection (2σ above mean)
-   - Savings rate calculations with recommendations
-3. **Recurring Transaction Detection**: Intelligent algorithm that identifies subscriptions and recurring bills by analyzing:
-   - Transaction description + amount consistency
-   - Time interval regularity (monthly, weekly, quarterly)
-   - Next payment prediction with confidence scoring
-   - Fixed critical bug: Now properly detects negative expense amounts
-
-### Magic of Compounding Calculator (November 9, 2025):
-**NEW: Mind-Blowing Financial Tool**
-- **Interactive Compound Interest Calculator** with stunning visualizations
-- **Customizable Inputs**:
-  - Initial investment amount
-  - Monthly contributions
-  - Annual interest rate (0-20%)
-  - Time period (1-50 years)
-  - Compounding frequency (Daily, Monthly, Quarterly, Annually)
-  - Optional inflation adjustment
-- **Powerful Features**:
-  - Real-time calculation updates
-  - Interactive Plotly chart showing growth journey
-  - Year-by-year breakdown table
-  - Key metrics: Final balance, total invested, interest earned, time to double
-  - Mind-blowing insights: ROI percentage, crossover point where returns exceed contributions
-- **Rule of 72**: Automatically calculates when your money doubles
-- **Visual Impact**: Beautiful green gradient chart showing wealth accumulation over time
-
-### Personalized Dashboard (November 9, 2025):
-**NEW: Customizable Dashboard with Enhanced Animations**
-- **Dashboard Personalization**: Sidebar toggles to show/hide sections:
-  - 📊 Company Reports (corporate financial analysis)
-  - 💰 Personal Spending (personal finance tracking)
-  - 💱 Currency Converter (multi-currency tools)
-- **Enhanced Animations**: 
-  - Smooth slide-in effects for sections
-  - Fade-up animations for content
-  - Scale-in animations for metrics
-  - Professional transitions throughout
-- **Session Persistence**: Preferences saved during your session
-- **Better UX**: Only show what you need, cleaner interface
-
-### Critical Bug Fixes (November 9, 2025):
-1. **Net Profit Calculation Fix**: Fixed financial impossibility where Net Profit was higher than Total Income
-   - Root cause: Bank statements use negative values for expenses (e.g., -$22.26)
-   - Solution: Applied abs() to expense/investment totals before profit calculation
-   - Result: Net Profit now correctly equals Income - Expenses
-2. **Savings Goals Button Layout Fix**: Resolved UI overflow where Update/Delete buttons broke container boundaries
-   - Root cause: Too many elements crammed in 3-column layout
-   - Solution: Expanded to 4-column layout with dedicated button column using compact symbols (✓ and 🗑️)
-   - Result: Professional, aligned UI with proper spacing
-3. **Smart Column Detection**: Enhanced file compatibility to handle real-world bank statement formats
-   - Handles variations like "Amount (USD)", "Amount (EUR)", "Transaction Date", etc.
-   - Prioritizes exact matches, then common patterns, then fuzzy matching
-   - Prevents false positives (e.g., "Update Notes" mistaken for date column)
-
-### Previous Features (Before Nov 9, 2025):
-4. **Custom Categorization Rules**: Users can add/delete persistent keyword rules that override default categorization
-5. **Budget Tracking**: Set budgets per category with visual alerts (red >100%, yellow >90%, green <90%)
-6. **Expense Subcategorization**: Automatic breakdown into Housing, Food & Dining, Transportation, Utilities, Other with pie chart visualization
-7. **Year-over-Year Analysis**: Compare financial data across multiple years
-8. **Seasonal Trend Detection**: Identify spending patterns by season (Winter, Spring, Summer, Fall)
-9. **Date Range Filtering**: Filter analysis to specific date ranges
-10. **Multi-file Upload**: Upload and compare multiple CSV/Excel files simultaneously
-11. **Enhanced UI**: Tabbed interface for different analysis views
-
-### Robustness Improvements:
-- Empty date range handling with user warnings
-- Missing category protection (ensures Income, Expense, Investment columns exist)
-- Forecast safety checks for insufficient data
-- Pie chart validation to prevent negative/zero value errors
-- Memory leak prevention with matplotlib figure cleanup
-- Duplicate rule prevention
-- Database error visibility to users
+## System Design Choices
+The architecture emphasizes a modular approach, separating data ingestion, processing, analysis, and presentation layers. Streamlit allows for a unified Python codebase for both backend logic and frontend display. PostgreSQL ensures reliable, ACID-compliant storage for critical user data, supporting the application's stateful components. A hybrid visualization strategy uses Plotly for interactive components and Matplotlib/Seaborn for static, high-quality outputs.
 
 # External Dependencies
 
 ## Data Analysis Libraries
-- **Pandas**: Core data manipulation and time series analysis
-- **NumPy**: Numerical operations and array handling
-- **Scikit-learn**: Linear regression for financial forecasting
+- **Pandas**: Core data manipulation and time series analysis.
+- **NumPy**: Numerical operations and array handling.
+- **Scikit-learn**: Linear regression for financial forecasting.
 
 ## Visualization Libraries
-- **Matplotlib**: Base plotting library
-- **Seaborn**: Statistical visualizations with enhanced aesthetics
+- **Matplotlib**: Base plotting library.
+- **Seaborn**: Statistical visualizations with enhanced aesthetics.
+- **Plotly**: Interactive charting for specific features like company comparison and calculators.
 
 ## PDF Generation
-- **ReportLab**: Professional PDF document creation with tables and formatted text
+- **ReportLab**: Professional PDF document creation.
 
 ## Web Framework
-- **Streamlit**: Interactive web application framework with built-in widgets and caching
+- **Streamlit**: Interactive web application framework.
+
+## Database
+- **PostgreSQL**: For persistent storage of user rules, budgets, and savings goals.
+- **psycopg2**: Python adapter for PostgreSQL.
 
 ## Utility Libraries
-- **re** (built-in): Regular expressions for transaction categorization
-- **io.BytesIO** (built-in): In-memory file handling for PDF generation
-- **base64** (built-in): Encoding for file downloads
+- **re**: Regular expressions for transaction categorization.
+- **io.BytesIO**: In-memory file handling.
+- **base64**: Encoding for file downloads.
 
 ## Data Formats Supported
-- CSV files (via Pandas)
-- Excel files (via Pandas with openpyxl/xlrd)
-
-**Expected Data Schema**:
-- `Date`: Transaction date
-- `Description`: Text description for categorization
-- `Amount`: Numeric transaction value
+- CSV files.
+- Excel files (requires `openpyxl`/`xlrd`).
