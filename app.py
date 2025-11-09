@@ -499,8 +499,8 @@ def analyze_finances(df, date_range=None):
             monthly[category] = 0
     
     total_income = monthly['Income'].sum() if 'Income' in monthly.columns else 0
-    total_expense = monthly['Expense'].sum() if 'Expense' in monthly.columns else 0
-    total_invest = monthly['Investment'].sum() if 'Investment' in monthly.columns else 0
+    total_expense = abs(monthly['Expense'].sum()) if 'Expense' in monthly.columns else 0
+    total_invest = abs(monthly['Investment'].sum()) if 'Investment' in monthly.columns else 0
     profit = total_income - total_expense
     margin = (profit / total_income * 100) if total_income > 0 else 0
     
@@ -1809,7 +1809,7 @@ if uploaded_files:
                     with st.container():
                         st.write(f"**{goal_name}**")
                         
-                        goal_col1, goal_col2, goal_col3 = st.columns([2, 1, 1])
+                        goal_col1, goal_col2, goal_col3, goal_col4 = st.columns([2, 1, 1.2, 0.8])
                         
                         with goal_col1:
                             st.progress(min(progress_pct / 100, 1.0))
@@ -1837,21 +1837,26 @@ if uploaded_files:
                                 step=10.0,
                                 key=f"goal_{goal_id}"
                             )
-                            if st.button("Update", key=f"update_{goal_id}"):
-                                success, error = update_savings_goal(goal_id, new_amount)
-                                if success:
-                                    st.success("Updated!")
-                                    st.rerun()
-                                else:
-                                    st.error(f"Error: {error}")
-                            
-                            if st.button("🗑️ Delete", key=f"delete_{goal_id}"):
-                                success, error = delete_savings_goal(goal_id)
-                                if success:
-                                    st.success("Deleted!")
-                                    st.rerun()
-                                else:
-                                    st.error(f"Error: {error}")
+                        
+                        with goal_col4:
+                            st.write("")  # Spacer to align with number input
+                            btn_col1, btn_col2 = st.columns(2)
+                            with btn_col1:
+                                if st.button("✓", key=f"update_{goal_id}", help="Update", use_container_width=True):
+                                    success, error = update_savings_goal(goal_id, new_amount)
+                                    if success:
+                                        st.success("Updated!")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"Error: {error}")
+                            with btn_col2:
+                                if st.button("🗑️", key=f"delete_{goal_id}", help="Delete", use_container_width=True):
+                                    success, error = delete_savings_goal(goal_id)
+                                    if success:
+                                        st.success("Deleted!")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"Error: {error}")
                         
                         st.divider()
             else:
