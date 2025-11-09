@@ -7,7 +7,7 @@ This is a comprehensive dual-format financial analysis application built with St
 
 The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
 
-**Last Updated**: November 9, 2025 - Phase 1 Enhancements Completed
+**Last Updated**: November 9, 2025 - Phase 2 Advanced Features Completed (All 8 Features)
 
 # User Preferences
 
@@ -119,6 +119,21 @@ Uses fuzzy column matching to identify data type:
 - Database features (custom rules, budgets) only apply to personal finance data
 
 ## Recent Enhancements (November 2025)
+
+### Phase 2 - Advanced Features (Completed Nov 9, 2025):
+1. **Chart PNG Downloads**: All charts now have high-quality 300 DPI PNG download buttons using fig_to_png_download() helper
+2. **Savings Goals Tracker**: Database-backed feature with savings_goals table, progress bars, monthly savings calculation, and CRUD operations
+3. **Multi-Currency Support**: 10 currencies supported (USD, EUR, GBP, CAD, AUD, JPY, CNY, INR, MXN, BRL) with automatic conversion using hardcoded exchange rates
+4. **Enhanced Forecasting**: 3-12 month projections with interactive what-if scenarios for income/expense changes, visual charts with surplus/deficit shading
+5. **Competitor Comparison**: Multi-company side-by-side metrics table and interactive Plotly revenue chart for corporate data analysis
+6. **Financial Ratios**: Automated calculation of profit margin, revenue per employee, revenue growth %, and employee growth % for corporate data
+7. **Corporate PDF Reports**: Downloadable PDF reports with company metrics, financial ratios, and formatted tables using ReportLab
+8. **Interactive Plotly Charts**: Company comparison chart converted to Plotly with hover tooltips, zoom, pan, and legend toggle capabilities
+
+**Implementation Notes:**
+- Hybrid approach: Plotly used for high-value interactive charts (company comparison), matplotlib retained for others with PNG downloads
+- Multi-currency has known limitation: single currency selector applies to all files in session (documented with UI warnings)
+- Savings goals persist in PostgreSQL database alongside custom_rules and budgets tables
 
 ### Phase 1 - Export & Intelligence Features (Completed Nov 9, 2025):
 1. **CSV/Excel Export**: Download filtered transaction data and monthly summaries in CSV or Excel format with multi-sheet support
