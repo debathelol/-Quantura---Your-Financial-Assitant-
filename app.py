@@ -760,9 +760,64 @@ def generate_report(metrics, monthly, df):
 
 st.set_page_config(page_title="FinAutomate", layout="wide")
 
+# Dashboard Customization State
+if 'show_company_section' not in st.session_state:
+    st.session_state.show_company_section = True
+if 'show_personal_section' not in st.session_state:
+    st.session_state.show_personal_section = True
+if 'show_currency_section' not in st.session_state:
+    st.session_state.show_currency_section = True
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    /* Smooth Slide-In Animation for Sections */
+    @keyframes slideInFromLeft {
+        0% {
+            transform: translateX(-30px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeInUp {
+        0% {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes scaleIn {
+        0% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    /* Apply animations to main sections */
+    .main .block-container {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    [data-testid="stMetricValue"] {
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        animation: slideInFromLeft 0.4s ease-out;
+    }
     
     .main-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 50%, #ec4899 100%);
@@ -1194,19 +1249,45 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("🌍 Currency Settings")
-    currencies = list(get_exchange_rates().keys())
-    selected_currency = st.selectbox(
-        "Data Currency",
-        currencies,
-        index=0,
-        help="Select the currency of ALL uploaded files. All files must be in the same currency. Amounts will be converted to USD for analysis."
+    st.header("🎨 Personalize Dashboard")
+    st.markdown("**Choose sections to display:**")
+    
+    st.session_state.show_company_section = st.checkbox(
+        "📊 Company Reports",
+        value=st.session_state.show_company_section,
+        help="Show corporate financial analysis and comparisons"
     )
-    if selected_currency != 'USD':
-        st.warning(f"⚠️ Conversion: {selected_currency} → USD (rate: {get_exchange_rates()[selected_currency]})")
-        st.caption("All uploaded files must be in the same currency")
+    
+    st.session_state.show_personal_section = st.checkbox(
+        "💰 Personal Spending",
+        value=st.session_state.show_personal_section,
+        help="Show personal finance analysis and budgets"
+    )
+    
+    st.session_state.show_currency_section = st.checkbox(
+        "💱 Currency Converter",
+        value=st.session_state.show_currency_section,
+        help="Show currency conversion tools"
+    )
+    
+    st.divider()
+    
+    if st.session_state.show_currency_section:
+        st.header("🌍 Currency Settings")
+        currencies = list(get_exchange_rates().keys())
+        selected_currency = st.selectbox(
+            "Data Currency",
+            currencies,
+            index=0,
+            help="Select the currency of ALL uploaded files. All files must be in the same currency. Amounts will be converted to USD for analysis."
+        )
+        if selected_currency != 'USD':
+            st.warning(f"⚠️ Conversion: {selected_currency} → USD (rate: {get_exchange_rates()[selected_currency]})")
+        else:
+            st.success("✓ Data already in USD")
     else:
-        st.success("✓ Data already in USD")
+        selected_currency = 'USD'
+        st.caption("💡 Enable 'Currency Converter' above to change currency settings")
     
     st.divider()
     st.header("Quick Start")
@@ -1311,7 +1392,9 @@ if uploaded_files:
         st.stop()
     
     # Corporate Data UI
-    if primary_type == 'corporate':
+    if primary_type == 'corporate' and not st.session_state.show_company_section:
+        st.info("📊 Corporate Reports section is hidden. Enable it in the sidebar to see company analysis.")
+    elif primary_type == 'corporate' and st.session_state.show_company_section:
         col_info = analyze_corporate_data(combined_df)
         
         with tab1:
@@ -1479,7 +1562,9 @@ if uploaded_files:
             st.info("Seasonal trends available for transaction data only")
     
     # Personal Finance Data UI
-    else:
+    elif primary_type != 'corporate' and not st.session_state.show_personal_section:
+        st.info("💰 Personal Spending section is hidden. Enable it in the sidebar to see financial analysis.")
+    elif primary_type != 'corporate' and st.session_state.show_personal_section:
         with tab1:
             st.subheader("📊 Data Preview")
             st.dataframe(combined_df.head(10), use_container_width=True)
