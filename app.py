@@ -272,6 +272,141 @@ def detect_seasonal_trends(df):
     seasonal_spending = df[df['Category'] == 'Expense'].groupby('Season')['Amount'].sum()
     return seasonal_spending
 
+def detect_recurring_transactions(df, min_transactions=3, max_time_std=5, max_amount_pct=0.05):
+    """Detect recurring transactions (subscriptions, rent, etc.)"""
+    if len(df) < min_transactions:
+        return pd.DataFrame()
+    
+    df_copy = df.copy()
+    df_copy['Date'] = pd.to_datetime(df_copy['Date'])
+    df_copy = df_copy.sort_values(['Description', 'Date'])
+    
+    results = []
+    
+    for description, group in df_copy.groupby('Description'):
+        if len(group) < min_transactions:
+            continue
+        
+        for amount in group['Amount'].unique():
+            # Handle negative amounts (expenses) by computing min/max correctly
+            lower_bound = min(amount * (1 - max_amount_pct), amount * (1 + max_amount_pct))
+            upper_bound = max(amount * (1 - max_amount_pct), amount * (1 + max_amount_pct))
+            
+            amount_group = group[group['Amount'].between(lower_bound, upper_bound)]
+            
+            if len(amount_group) < min_transactions:
+                continue
+            
+            amount_group = amount_group.sort_values('Date')
+            days_diff = amount_group['Date'].diff().dt.days.dropna()
+            
+            if len(days_diff) == 0:
+                continue
+            
+            time_std = days_diff.std()
+            mean_interval = days_diff.mean()
+            
+            if time_std <= max_time_std:
+                # Determine frequency type
+                if 28 <= mean_interval <= 32:
+                    frequency = "Monthly"
+                elif 6 <= mean_interval <= 8:
+                    frequency = "Weekly"
+                elif 85 <= mean_interval <= 95:
+                    frequency = "Quarterly"
+                else:
+                    frequency = f"Every {int(mean_interval)} days"
+                
+                results.append({
+                    'Description': description,
+                    'Amount': amount,
+                    'Frequency': frequency,
+                    'Interval (days)': round(mean_interval, 1),
+                    'Count': len(amount_group),
+                    'Next Expected': amount_group['Date'].max() + pd.Timedelta(days=mean_interval)
+                })
+    
+    return pd.DataFrame(results).sort_values('Amount', ascending=False) if results else pd.DataFrame()
+
+def generate_smart_insights(df, date_range=None):
+    """Generate automatic financial insights and anomalies"""
+    insights = []
+    
+    if len(df) == 0:
+        return insights
+    
+    # Calculate current period metrics
+    if date_range:
+        current_df = df[(df['Date'] >= date_range[0]) & (df['Date'] <= date_range[1])]
+    else:
+        current_df = df
+    
+    # Insight 1: Highest expense category
+    expense_by_cat = current_df[current_df['Category'] == 'Expense'].groupby('Description')['Amount'].sum().sort_values(ascending=False)
+    if len(expense_by_cat) > 0:
+        top_expense = expense_by_cat.index[0]
+        top_amount = expense_by_cat.iloc[0]
+        insights.append({
+            'type': 'info',
+            'icon': '💰',
+            'message': f"Your biggest expense is **{top_expense}** at **${top_amount:,.2f}**"
+        })
+    
+    # Insight 2: Month-over-month comparison
+    if 'Date' in current_df.columns and len(current_df) > 0:
+        current_df['YearMonth'] = current_df['Date'].dt.to_period('M')
+        monthly_spending = current_df[current_df['Category'] == 'Expense'].groupby('YearMonth')['Amount'].sum().sort_index()
+        
+        if len(monthly_spending) >= 2:
+            last_month = monthly_spending.iloc[-1]
+            prev_month = monthly_spending.iloc[-2]
+            pct_change = ((last_month - prev_month) / prev_month * 100) if prev_month > 0 else 0
+            
+            if abs(pct_change) > 20:
+                emoji = '📈' if pct_change > 0 else '📉'
+                direction = 'increased' if pct_change > 0 else 'decreased'
+                insights.append({
+                    'type': 'warning' if pct_change > 0 else 'success',
+                    'icon': emoji,
+                    'message': f"Your spending {direction} by **{abs(pct_change):.1f}%** compared to last month"
+                })
+    
+    # Insight 3: Detect unusual large transactions
+    if len(current_df) > 10:
+        mean_amount = current_df['Amount'].mean()
+        std_amount = current_df['Amount'].std()
+        threshold = mean_amount + (2 * std_amount)
+        
+        unusual = current_df[current_df['Amount'] > threshold]
+        if len(unusual) > 0:
+            insights.append({
+                'type': 'warning',
+                'icon': '⚠️',
+                'message': f"Found **{len(unusual)}** unusually large transaction(s) above ${threshold:,.2f}"
+            })
+    
+    # Insight 4: Income trend
+    income_data = current_df[current_df['Category'] == 'Income']
+    if len(income_data) > 0:
+        total_income = income_data['Amount'].sum()
+        total_expense = current_df[current_df['Category'] == 'Expense']['Amount'].sum()
+        savings_rate = ((total_income - total_expense) / total_income * 100) if total_income > 0 else 0
+        
+        if savings_rate > 30:
+            insights.append({
+                'type': 'success',
+                'icon': '🎯',
+                'message': f"Great job! You're saving **{savings_rate:.1f}%** of your income"
+            })
+        elif savings_rate < 10:
+            insights.append({
+                'type': 'warning',
+                'icon': '💡',
+                'message': f"Your savings rate is **{savings_rate:.1f}%**. Consider reducing expenses to save more"
+            })
+    
+    return insights
+
 def generate_report(metrics, monthly, df):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
     
@@ -1006,12 +1141,51 @@ if uploaded_files:
                 chart_url, pdf_buffer = generate_report(metrics, monthly, filtered_df)
                 st.image(f"data:image/png;base64,{chart_url}", caption="Visual Report")
                 
-                st.download_button(
-                    label="📥 Download PDF Report",
-                    data=pdf_buffer.getvalue(),
-                    file_name="financial_report.pdf",
-                    mime="application/pdf"
-                )
+                col_dl1, col_dl2, col_dl3 = st.columns(3)
+                with col_dl1:
+                    st.download_button(
+                        label="📥 Download PDF Report",
+                        data=pdf_buffer.getvalue(),
+                        file_name="financial_report.pdf",
+                        mime="application/pdf"
+                    )
+                
+                with col_dl2:
+                    csv_buffer = BytesIO()
+                    filtered_df.to_csv(csv_buffer, index=False)
+                    st.download_button(
+                        label="📊 Export as CSV",
+                        data=csv_buffer.getvalue(),
+                        file_name="financial_data.csv",
+                        mime="text/csv"
+                    )
+                
+                with col_dl3:
+                    excel_buffer = BytesIO()
+                    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                        filtered_df.to_excel(writer, sheet_name='Transactions', index=False)
+                        monthly.to_excel(writer, sheet_name='Monthly Summary')
+                    st.download_button(
+                        label="📈 Export as Excel",
+                        data=excel_buffer.getvalue(),
+                        file_name="financial_data.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                
+                # Smart Insights Panel
+                st.subheader("💡 Smart Insights")
+                insights = generate_smart_insights(filtered_df, date_range)
+                
+                if insights:
+                    for insight in insights:
+                        if insight['type'] == 'success':
+                            st.success(f"{insight['icon']} {insight['message']}")
+                        elif insight['type'] == 'warning':
+                            st.warning(f"{insight['icon']} {insight['message']}")
+                        else:
+                            st.info(f"{insight['icon']} {insight['message']}")
+                else:
+                    st.info("📊 Not enough data yet to generate insights. Add more transactions!")
                 
                 if len(uploaded_files) > 1:
                     st.subheader("📁 File Comparison")
@@ -1083,3 +1257,27 @@ if uploaded_files:
                     st.metric(season, f"${amount:,.2f}")
             else:
                 st.info("No seasonal data available.")
+        
+        # Recurring Transactions Section
+        st.divider()
+        with st.expander("🔄 Recurring Transactions & Subscriptions", expanded=False):
+            st.write("**Detect your subscriptions, rent, and regular payments:**")
+            recurring_df = detect_recurring_transactions(combined_df)
+            
+            if not recurring_df.empty:
+                st.dataframe(recurring_df, use_container_width=True)
+                
+                total_recurring = recurring_df['Amount'].sum()
+                st.metric("💰 Total Monthly Recurring", f"${total_recurring:,.2f}")
+                
+                st.write("**Breakdown:**")
+                for _, row in recurring_df.iterrows():
+                    col_r1, col_r2, col_r3 = st.columns(3)
+                    with col_r1:
+                        st.write(f"**{row['Description']}**")
+                    with col_r2:
+                        st.write(f"${row['Amount']:,.2f} - {row['Frequency']}")
+                    with col_r3:
+                        st.write(f"Next: {row['Next Expected'].strftime('%Y-%m-%d')}")
+            else:
+                st.info("No recurring transactions detected yet. Upload more data with regular payments!")
