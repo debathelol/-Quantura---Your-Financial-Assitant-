@@ -1289,6 +1289,148 @@ st.markdown("""
         transform: scale(1.02);
     }
     
+    /* Glowing Section Effects */
+    .element-container {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    /* Expander Glowing Effects */
+    .streamlit-expanderHeader {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+        border-radius: 12px !important;
+    }
+    
+    .streamlit-expanderHeader:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)) !important;
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), 
+                    0 0 60px rgba(139, 92, 246, 0.2),
+                    inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
+        transform: translateX(5px) scale(1.01);
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    /* Container Glow on Hover */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"]:hover {
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.3),
+                    0 0 50px rgba(139, 92, 246, 0.15);
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.02), rgba(139, 92, 246, 0.02));
+    }
+    
+    /* Column Glow Effects */
+    [data-testid="column"] {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 10px;
+        padding: 0.5rem;
+    }
+    
+    [data-testid="column"]:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        transform: scale(1.01);
+    }
+    
+    /* Enhanced Metric Glow */
+    [data-testid="metric-container"] {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    [data-testid="metric-container"]:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4),
+                    0 8px 25px rgba(99, 102, 241, 0.2);
+        transform: translateY(-5px) scale(1.03);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    
+    /* Plotly Chart Glow */
+    .js-plotly-plot {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 12px;
+    }
+    
+    .js-plotly-plot:hover {
+        box-shadow: 0 0 40px rgba(99, 102, 241, 0.3),
+                    0 0 80px rgba(139, 92, 246, 0.15);
+        transform: scale(1.01);
+    }
+    
+    /* Divider Glow Animation */
+    hr {
+        transition: all 0.4s ease;
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #6366f1, transparent);
+    }
+    
+    hr:hover {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+        height: 3px;
+    }
+    
+    /* Progress Bar Glow */
+    .stProgress > div > div {
+        transition: all 0.3s ease;
+    }
+    
+    .stProgress:hover > div > div {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    }
+    
+    /* Text Input Enhanced Glow */
+    .stTextInput input {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+    
+    .stTextInput input:hover {
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important;
+        border-color: rgba(99, 102, 241, 0.5) !important;
+    }
+    
+    .stTextInput input:focus {
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.5),
+                    0 0 50px rgba(139, 92, 246, 0.2) !important;
+        border-color: #6366f1 !important;
+    }
+    
+    /* Number Input Glow */
+    .stNumberInput input {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+    
+    .stNumberInput input:hover {
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.3) !important;
+    }
+    
+    .stNumberInput input:focus {
+        box-shadow: 0 0 25px rgba(99, 102, 241, 0.5),
+                    0 0 50px rgba(139, 92, 246, 0.2) !important;
+    }
+    
+    /* Slider Glow */
+    .stSlider:hover {
+        filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5));
+    }
+    
+    /* Form Container Glow */
+    [data-testid="stForm"] {
+        transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+        border-radius: 12px;
+    }
+    
+    [data-testid="stForm"]:hover {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.3),
+                    0 0 60px rgba(139, 92, 246, 0.15);
+        border-color: rgba(99, 102, 241, 0.4) !important;
+    }
+    
     /* Sticky Navigation Bar */
     .nav-container {
         position: sticky;
