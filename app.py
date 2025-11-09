@@ -1349,6 +1349,8 @@ st.markdown("""
     }
 </style>
 
+<div id="home" class="section-anchor"></div>
+
 <div class="nav-container">
     <div class="nav-menu">
         <a href="#home" class="nav-item">🏠 Home</a>
@@ -1361,7 +1363,7 @@ st.markdown("""
     </div>
 </div>
 
-<div class="main-header section-anchor" id="home">
+<div class="main-header">
     <h1 class="header-title">🚀 FinAutomate</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
     <p class="header-tagline">✨ Let's make your life hassle-free</p>
