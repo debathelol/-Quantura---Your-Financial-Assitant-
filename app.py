@@ -1354,7 +1354,7 @@ st.markdown("""
 <div class="main-header">
     <h1 class="header-title">🚀 FinAutomate</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
-    <p class="header-tagline">✨ Let's make your life hassle-free</p>
+    <p class="header-tagline">✨ Let's make your financial life hassle-free</p>
     <div class="features-grid">
         <div class="feature-card">
             <div class="feature-icon">📊</div>
