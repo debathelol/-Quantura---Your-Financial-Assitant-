@@ -767,6 +767,8 @@ if 'show_personal_section' not in st.session_state:
     st.session_state.show_personal_section = True
 if 'show_currency_section' not in st.session_state:
     st.session_state.show_currency_section = True
+if 'show_financial_tools' not in st.session_state:
+    st.session_state.show_financial_tools = True
 
 st.markdown("""
 <style>
@@ -1343,6 +1345,12 @@ with st.sidebar:
         help="Show currency conversion tools"
     )
     
+    st.session_state.show_financial_tools = st.checkbox(
+        "🪄 Financial Tools",
+        value=st.session_state.show_financial_tools,
+        help="Show magic of compounding and other financial calculators"
+    )
+    
     st.divider()
     
     if st.session_state.show_currency_section:
@@ -1416,6 +1424,173 @@ with st.sidebar:
                     st.rerun()
                 else:
                     st.error(f"Failed to set budget: {error}")
+
+# 🪄 Financial Tools Section - Magic of Compounding
+if st.session_state.show_financial_tools:
+    st.markdown("---")
+    st.header("🪄 Financial Tools")
+    
+    with st.expander("💰 Magic of Compounding - Watch Your Money Grow!", expanded=True):
+        st.markdown("**Discover the power of compound interest and see your wealth multiply over time!**")
+        
+        col_input1, col_input2, col_input3 = st.columns(3)
+        
+        with col_input1:
+            principal = st.number_input("💵 Initial Investment ($)", min_value=0.0, value=10000.0, step=1000.0, help="Starting amount you invest today")
+            monthly_contribution = st.number_input("📅 Monthly Addition ($)", min_value=0.0, value=500.0, step=100.0, help="Amount you add each month")
+        
+        with col_input2:
+            annual_rate = st.slider("📈 Annual Interest Rate (%)", min_value=0.0, max_value=20.0, value=8.0, step=0.5, help="Expected annual return rate")
+            years = st.slider("⏰ Time Period (Years)", min_value=1, max_value=50, value=20, step=1, help="Investment duration")
+        
+        with col_input3:
+            compound_freq = st.selectbox("🔄 Compounding Frequency", 
+                options=["Monthly", "Quarterly", "Annually", "Daily"],
+                index=0,
+                help="How often interest is calculated and added")
+            
+            show_inflation = st.checkbox("📊 Adjust for Inflation", value=False)
+            if show_inflation:
+                inflation_rate = st.slider("Inflation Rate (%)", min_value=0.0, max_value=10.0, value=3.0, step=0.1)
+        
+        # Calculate compound interest
+        freq_map = {"Daily": 365, "Monthly": 12, "Quarterly": 4, "Annually": 1}
+        n = freq_map[compound_freq]
+        r = annual_rate / 100
+        
+        # Calculate year-by-year growth
+        years_array = list(range(years + 1))
+        balances = []
+        principal_total = []
+        interest_total = []
+        
+        for t in years_array:
+            # Compound interest on principal
+            compound_value = principal * (1 + r/n)**(n*t)
+            
+            # Future value of monthly contributions (annuity)
+            if monthly_contribution > 0 and t > 0:
+                monthly_rate = r / 12
+                months = t * 12
+                fv_contributions = monthly_contribution * (((1 + monthly_rate)**months - 1) / monthly_rate)
+                total_contributions = monthly_contribution * months
+            else:
+                fv_contributions = 0
+                total_contributions = 0
+            
+            total_balance = compound_value + fv_contributions
+            total_principal = principal + total_contributions
+            total_interest = total_balance - total_principal
+            
+            balances.append(total_balance)
+            principal_total.append(total_principal)
+            interest_total.append(total_interest)
+        
+        # Apply inflation adjustment if enabled
+        if show_inflation:
+            inflation_factor = [(1 / (1 + inflation_rate/100)**t) for t in years_array]
+            real_balances = [bal * factor for bal, factor in zip(balances, inflation_factor)]
+        else:
+            real_balances = balances
+        
+        # Display Key Metrics
+        st.markdown("### 🎯 Your Wealth Projection")
+        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+        
+        final_balance = balances[-1]
+        final_principal = principal_total[-1]
+        final_interest = interest_total[-1]
+        
+        with metric_col1:
+            st.metric("💰 Final Balance", f"${final_balance:,.0f}")
+        with metric_col2:
+            st.metric("📥 Total Invested", f"${final_principal:,.0f}")
+        with metric_col3:
+            st.metric("✨ Interest Earned", f"${final_interest:,.0f}", delta=f"{(final_interest/final_principal*100):.1f}% return")
+        with metric_col4:
+            # Calculate when money doubles
+            if annual_rate > 0:
+                years_to_double = 72 / annual_rate  # Rule of 72
+                st.metric("⏱️ Money Doubles In", f"{years_to_double:.1f} years")
+        
+        # Create interactive Plotly chart
+        fig_compound = go.Figure()
+        
+        # Add total balance area
+        fig_compound.add_trace(go.Scatter(
+            x=years_array,
+            y=balances,
+            fill='tozeroy',
+            name='Total Balance',
+            line=dict(color='#10b981', width=3),
+            hovertemplate='<b>Year %{x}</b><br>Balance: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Add principal line
+        fig_compound.add_trace(go.Scatter(
+            x=years_array,
+            y=principal_total,
+            name='Total Invested',
+            line=dict(color='#3b82f6', width=2, dash='dash'),
+            hovertemplate='<b>Year %{x}</b><br>Invested: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Add interest earned area
+        fig_compound.add_trace(go.Scatter(
+            x=years_array,
+            y=interest_total,
+            fill='tozeroy',
+            name='Interest Earned',
+            line=dict(color='#f59e0b', width=2),
+            fillcolor='rgba(245, 158, 11, 0.3)',
+            hovertemplate='<b>Year %{x}</b><br>Interest: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        fig_compound.update_layout(
+            title='🚀 The Magic of Compounding - Your Money Growth Journey',
+            xaxis_title='Years',
+            yaxis_title='Amount ($)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=500,
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        
+        st.plotly_chart(fig_compound, use_container_width=True)
+        
+        # Growth Table
+        st.markdown("### 📊 Year-by-Year Breakdown")
+        growth_data = {
+            "Year": years_array[::5] if years > 20 else years_array,  # Show every 5 years if >20
+            "Balance": [f"${balances[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
+            "Invested": [f"${principal_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
+            "Interest": [f"${interest_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))]
+        }
+        st.dataframe(pd.DataFrame(growth_data), use_container_width=True, hide_index=True)
+        
+        # Wow Factor Insights
+        st.markdown("### 💡 Mind-Blowing Insights")
+        insight_col1, insight_col2 = st.columns(2)
+        
+        with insight_col1:
+            roi = (final_balance / final_principal - 1) * 100
+            st.success(f"🎉 Your {roi:.0f}% return means every dollar you invest grows to **${final_balance/final_principal:.2f}**!")
+        
+        with insight_col2:
+            # Find crossover point where interest > contributions
+            for i, (interest, contrib) in enumerate(zip(interest_total, principal_total)):
+                if interest > contrib - principal:
+                    st.info(f"⚡ By year {i}, your returns (**${interest:,.0f}**) will exceed your contributions (**${contrib - principal:,.0f}**)!")
+                    break
+    
+    st.markdown("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
 
