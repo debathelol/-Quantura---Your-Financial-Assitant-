@@ -1590,6 +1590,161 @@ if st.session_state.show_financial_tools:
                     st.info(f"⚡ By year {i}, your returns (**${interest:,.0f}**) will exceed your contributions (**${contrib - principal:,.0f}**)!")
                     break
     
+    # Car Purchase Calculator - 20-5-10 Rule
+    with st.expander("🚗 Smart Car Purchase Calculator - 20-5-10 Rule", expanded=False):
+        st.markdown("**Make smart car buying decisions using the 20-5-10 rule:**")
+        st.info("✅ **20%** down payment | ✅ **5 years** max loan | ✅ EMI ≤ **10%** of monthly salary")
+        
+        car_col1, car_col2, car_col3 = st.columns(3)
+        
+        with car_col1:
+            car_price = st.number_input("🚗 Car Price ($)", min_value=0.0, value=30000.0, step=1000.0, help="Total on-road price of the car")
+            monthly_salary = st.number_input("💰 Monthly Salary ($)", min_value=0.0, value=5000.0, step=500.0, help="Your gross monthly salary")
+        
+        with car_col2:
+            down_payment_pct = st.slider("💵 Down Payment (%)", min_value=0, max_value=50, value=20, step=5, help="Recommended: 20%")
+            loan_tenure_years = st.slider("📅 Loan Tenure (Years)", min_value=1, max_value=7, value=5, step=1, help="Recommended: 5 years max")
+        
+        with car_col3:
+            car_interest_rate = st.slider("📈 Interest Rate (%)", min_value=0.0, max_value=15.0, value=7.0, step=0.5, help="Annual interest rate on car loan")
+            max_emi_pct = st.slider("🎯 Max EMI (% of salary)", min_value=5, max_value=20, value=10, step=1, help="Recommended: 10% max")
+        
+        # Calculate loan details
+        down_payment = car_price * (down_payment_pct / 100)
+        loan_amount = car_price - down_payment
+        months = loan_tenure_years * 12
+        
+        # EMI calculation
+        if loan_amount > 0:
+            if car_interest_rate > 0:
+                # Standard EMI formula: P * r * (1+r)^n / ((1+r)^n - 1)
+                monthly_rate = car_interest_rate / (12 * 100)
+                emi = loan_amount * monthly_rate * ((1 + monthly_rate) ** months) / (((1 + monthly_rate) ** months) - 1)
+                total_payment = emi * months
+                total_interest = total_payment - loan_amount
+            else:
+                # Zero interest: simple amortization
+                emi = loan_amount / months
+                total_payment = loan_amount
+                total_interest = 0
+        else:
+            emi = 0
+            total_payment = 0
+            total_interest = 0
+        
+        # Check affordability
+        max_affordable_emi = monthly_salary * (max_emi_pct / 100)
+        is_affordable = emi <= max_affordable_emi
+        emi_pct_of_salary = (emi / monthly_salary * 100) if monthly_salary > 0 else 0
+        
+        # Display verdict
+        st.markdown("### 🎯 Affordability Check")
+        
+        if is_affordable and down_payment_pct >= 20 and loan_tenure_years <= 5:
+            st.success("✅ **GREAT CHOICE!** This car fits the 20-5-10 rule perfectly!")
+        elif is_affordable:
+            st.warning("⚠️ **PARTIALLY AFFORDABLE** - EMI is good, but check down payment and tenure")
+        else:
+            st.error("❌ **NOT RECOMMENDED** - EMI exceeds safe limit for your salary")
+        
+        # Display metrics
+        st.markdown("### 💰 Loan Breakdown")
+        metric_car1, metric_car2, metric_car3, metric_car4 = st.columns(4)
+        
+        with metric_car1:
+            st.metric("💵 Down Payment", f"${down_payment:,.0f}", delta=f"{down_payment_pct}% of price")
+        with metric_car2:
+            st.metric("📊 Loan Amount", f"${loan_amount:,.0f}")
+        with metric_car3:
+            color_delta = "normal" if is_affordable else "inverse"
+            st.metric("💳 Monthly EMI", f"${emi:,.0f}", delta=f"{emi_pct_of_salary:.1f}% of salary", delta_color=color_delta)
+        with metric_car4:
+            st.metric("💸 Total Interest", f"${total_interest:,.0f}")
+        
+        # Visual EMI vs Salary comparison
+        st.markdown("### 📊 EMI vs Your Salary")
+        
+        fig_car = go.Figure()
+        
+        # Add bars
+        fig_car.add_trace(go.Bar(
+            x=['Your Monthly EMI', 'Remaining Salary'],
+            y=[emi, monthly_salary - emi],
+            marker=dict(
+                color=['#ef4444' if not is_affordable else '#10b981', '#3b82f6'],
+            ),
+            text=[f'${emi:,.0f}<br>({emi_pct_of_salary:.1f}%)', f'${monthly_salary - emi:,.0f}'],
+            textposition='auto',
+            hovertemplate='%{x}: $%{y:,.0f}<extra></extra>'
+        ))
+        
+        # Add max EMI line
+        fig_car.add_hline(
+            y=max_affordable_emi, 
+            line_dash="dash", 
+            line_color="orange",
+            annotation_text=f"Max Safe EMI: ${max_affordable_emi:,.0f} ({max_emi_pct}%)",
+            annotation_position="right"
+        )
+        
+        fig_car.update_layout(
+            title='💰 Monthly Budget Impact',
+            yaxis_title='Amount ($)',
+            showlegend=False,
+            template='plotly_white',
+            height=400
+        )
+        
+        st.plotly_chart(fig_car, use_container_width=True)
+        
+        # Payment schedule summary
+        st.markdown("### 📅 Payment Summary")
+        payment_summary = {
+            "Item": ["Down Payment (Upfront)", "Monthly EMI", "Total Loan Payments", "Total Interest Paid", "**Total Car Cost**"],
+            "Amount": [
+                f"${down_payment:,.0f}",
+                f"${emi:,.0f}",
+                f"${total_payment:,.0f}",
+                f"${total_interest:,.0f}",
+                f"**${down_payment + total_payment:,.0f}**"
+            ],
+            "Details": [
+                f"{down_payment_pct}% of ${car_price:,.0f}",
+                f"For {months} months ({loan_tenure_years} years)",
+                f"{months} payments × ${emi:,.0f}",
+                f"{(total_interest/loan_amount*100):.1f}% of loan" if loan_amount > 0 else "0%",
+                f"Price + Interest"
+            ]
+        }
+        st.dataframe(pd.DataFrame(payment_summary), use_container_width=True, hide_index=True)
+        
+        # Recommendations
+        st.markdown("### 💡 Smart Recommendations")
+        
+        rec_col1, rec_col2 = st.columns(2)
+        
+        with rec_col1:
+            if down_payment_pct < 20:
+                st.warning(f"🔸 **Increase down payment to 20%**: Save ${car_price * 0.2 - down_payment:,.0f} more")
+            else:
+                st.success(f"✅ Down payment meets 20% rule!")
+            
+            if loan_tenure_years > 5:
+                st.warning(f"🔸 **Reduce tenure to 5 years**: Saves ${total_interest - (loan_amount * (car_interest_rate/100) * 5 / 2):,.0f} in interest")
+            else:
+                st.success(f"✅ Loan tenure within 5-year rule!")
+        
+        with rec_col2:
+            if emi_pct_of_salary > max_emi_pct:
+                ideal_car_price = (max_affordable_emi * months) / (1 - down_payment_pct/100) if down_payment_pct < 100 else 0
+                st.error(f"🔸 **Consider a cheaper car**: Max budget ~${ideal_car_price:,.0f} for your salary")
+            else:
+                st.success(f"✅ EMI is within {max_emi_pct}% salary rule!")
+            
+            # Money saved if following all rules
+            if not (is_affordable and down_payment_pct >= 20 and loan_tenure_years <= 5):
+                st.info(f"💰 Following the 20-5-10 rule could save you from financial stress and hidden costs!")
+    
     st.markdown("---")
 
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
