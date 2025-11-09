@@ -14,7 +14,7 @@ The application uses Streamlit for its frontend, enabling rapid development of i
 ## Recent Implementation Updates
 
 ### November 9, 2025 - Financial Tools Section
-Added three powerful financial calculators with interactive visualizations:
+Added SIX comprehensive financial calculators with interactive visualizations:
 
 1. **Magic of Compounding Calculator**:
    - Compound interest calculations with monthly contributions
@@ -48,13 +48,57 @@ Added three powerful financial calculators with interactive visualizations:
    - AI-style smart insights with emergency fund timeline and plan-specific recommendations
    - Helps users choose the right strategy for their financial goals and situation
 
+4. **Retirement Planning Calculator - Am I On Track?**:
+   - Comprehensive retirement readiness analysis
+   - Inputs: Current age, retirement age, current savings, monthly contribution, expected return, retirement expenses, Social Security/pension
+   - Future value calculations using compound interest formulas
+   - Retirement needs projection (monthly gap × years in retirement)
+   - On-track vs shortfall analysis with actionable insights
+   - **4 KPI Metrics**: Total at retirement, total needed, years money lasts, monthly retirement income
+   - Interactive Plotly chart showing savings growth trajectory from current age to retirement
+   - Target line visualization comparing projected savings vs retirement goal
+   - Detailed retirement income breakdown table (Social Security + portfolio withdrawals)
+   - **Smart Insights**: Action recommendations (increase contribution by $X), alternative retirement age calculations, early retirement possibilities
+   - Handles edge cases: infinite money duration when Social Security covers all expenses
+
+5. **Debt Payoff Planner - Get Out of Debt Faster!**:
+   - Dynamic debt entry system (1-10 debts with name, balance, interest rate, minimum payment)
+   - **Two Strategy Comparison**: Snowball (smallest first) vs Avalanche (highest interest first)
+   - Month-by-month amortization simulation with accurate interest calculations
+   - Each debt gets monthly interest applied, then principal reduction from payments
+   - Extra payment allocation to target debt based on strategy
+   - **Side-by-side metrics**: Payoff timeline, total paid, total interest for both methods
+   - Winner recommendation showing savings and time difference
+   - Interactive Plotly timeline chart showing debt reduction journey (Avalanche method)
+   - Payoff order table with month-by-month debt elimination schedule
+   - **Smart Insights**: Total debt summary, minimum payment totals, weighted average interest rate, freedom date calculation
+   - Aggressive strategy detection (extra payment ≥ 50% of minimums)
+   - Real-world calendar projection (freedom date in Month/Year format)
+
+6. **Investment Portfolio Analyzer - Optimize Your Investments**:
+   - **Two input modes**: Manual entry (individual holdings) or Quick Allocation (percentage-based)
+   - Asset types supported: Stocks, Bonds, Real Estate, Cash, Commodities, Crypto
+   - **Diversification Score**: 0-100 scale based on concentration and number of asset types
+   - Interactive Plotly donut chart showing asset allocation with hover details
+   - Detailed breakdown table with value, percentage, and risk level for each asset type
+   - **Age-based recommendations**: Rule of thumb (100 - age = stocks %, age = bonds %)
+   - **Risk tolerance adjustments**: Conservative (-15% stocks), Moderate (baseline), Aggressive (+15% stocks)
+   - Personalized allocation targets with current vs recommended comparison
+   - **Rebalancing suggestions**: Specific dollar amounts to buy/sell for alignment
+   - Triggers rebalancing when allocation differs >10% from recommendations
+   - **Risk assessment**: High/Medium/Low risk classification based on volatile asset percentage
+   - **Concentration risk alerts**: Warning when one asset type exceeds 40-60% of portfolio
+   - Manual entry supports up to 20 individual holdings for detailed portfolio analysis
+
 All calculators feature:
 - Real-time calculations with instant updates
-- Professional Plotly visualizations
-- Comprehensive KPI metrics
-- User-friendly layouts
-- Expandable/collapsible sections
+- Professional Plotly visualizations (line charts, donut charts, timelines)
+- Comprehensive KPI metrics with delta indicators
+- User-friendly layouts with column-based organization
+- Expandable/collapsible sections for focused analysis
 - Controlled by sidebar toggle: "🪄 Financial Tools"
+- Smart personalized insights based on user inputs
+- Edge case handling for zero values, infinite scenarios, and boundary conditions
 
 ## Technical Implementations
 - **Intelligent Data Detection**: Automatically identifies incoming data as either "Personal Finance Transactions" (requiring `Date`, `Description`, `Amount`) or "Corporate Overview Data" (requiring `Year`, `Revenue`, `Net Income`, `Market Cap`, `Employees`) using fuzzy column matching.
