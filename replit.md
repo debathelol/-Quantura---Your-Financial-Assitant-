@@ -1,6 +1,11 @@
 # Overview
 
-This is a comprehensive personal finance analysis application built with Streamlit and PostgreSQL. The app allows users to upload transaction data (CSV or Excel), automatically categorizes transactions using customizable rule-based pattern matching, tracks budgets with visual alerts, and provides detailed financial insights through interactive analysis, visualizations, and forecasting. The primary goal is to help users understand their income, expenses, and investment patterns with minimal manual effort while providing persistent custom rules and budget tracking.
+This is a comprehensive dual-format financial analysis application built with Streamlit and PostgreSQL. The app intelligently detects and analyzes two types of data:
+
+1. **Personal Finance Transactions**: Upload transaction data (CSV or Excel) with automatic categorization, budget tracking, expense breakdowns, and forecasting
+2. **Corporate Overview Data**: Analyze company financial metrics including revenue trends, net income, market cap, and employee growth
+
+The app uses smart detection to automatically identify the data format and provide appropriate analysis tools. Personal finance features include customizable rule-based pattern matching, budget alerts, and persistent database storage. Corporate analysis provides year-over-year comparisons and trend visualizations.
 
 **Last Updated**: November 9, 2025
 
@@ -86,6 +91,32 @@ Preferred communication style: Simple, everyday language.
 - Budget settings persist and track spending against limits
 - Duplicate keyword prevention
 - Error handling with user-visible feedback
+
+## Dual-Format Data Support (November 2025)
+
+### Intelligent Data Detection
+The app now automatically detects and handles two distinct data formats:
+
+**1. Personal Finance Transactions**
+- Required columns: `Date`, `Description`, `Amount`
+- Features: Auto-categorization, budgets, custom rules, expense breakdown, seasonal analysis
+- Use case: Bank statements, credit card transactions, personal spending tracking
+
+**2. Corporate Overview Data**
+- Detected columns: `Year`, `Revenue`, `Net Income`, `Market Cap`, `Employees`, etc.
+- Features: Revenue trends, income comparisons, employee growth, year-over-year metrics
+- Use case: Company financial reports, brand performance analysis, corporate benchmarking
+
+### Detection Algorithm
+Uses fuzzy column matching to identify data type:
+- Corporate indicators: year, revenue, net income, market cap, employees, ceo
+- Personal finance indicators: date, description, amount, transaction
+- Threshold: 3+ matches for corporate, 2+ for personal finance
+
+### Separate Analysis Paths
+- Data is NOT mixed - corporate and personal finance files are analyzed independently
+- Each type gets custom UI, visualizations, and metrics
+- Database features (custom rules, budgets) only apply to personal finance data
 
 ## Recent Enhancements (November 2025)
 

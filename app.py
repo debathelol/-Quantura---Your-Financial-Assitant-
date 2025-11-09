@@ -91,12 +91,39 @@ def set_budget(category, amount):
     except Exception as e:
         return False, str(e)
 
+def detect_data_type(df):
+    """Detect if data is personal finance transactions or corporate overview"""
+    columns_lower = [col.lower() for col in df.columns]
+    
+    # Corporate data indicators
+    corporate_indicators = ['year', 'revenue', 'net income', 'market cap', 'employees', 'ceo']
+    corporate_matches = sum(1 for indicator in corporate_indicators if any(indicator in col for col in columns_lower))
+    
+    # Personal finance indicators
+    finance_indicators = ['date', 'description', 'amount', 'transaction']
+    finance_matches = sum(1 for indicator in finance_indicators if any(indicator in col for col in columns_lower))
+    
+    if corporate_matches >= 3:
+        return 'corporate'
+    elif finance_matches >= 2:
+        return 'personal_finance'
+    else:
+        return 'unknown'
+
 def load_and_categorize(uploaded_file, custom_rules=None):
     if uploaded_file.name.endswith('.csv'):
         df = pd.read_csv(uploaded_file)
     else:
         df = pd.read_excel(uploaded_file)
     
+    data_type = detect_data_type(df)
+    
+    if data_type == 'corporate':
+        # Corporate data - return as-is with metadata
+        df['data_type'] = 'corporate'
+        return df
+    
+    # Personal finance data - validate and categorize
     required_columns = ['Date', 'Description', 'Amount']
     missing_columns = [col for col in required_columns if col not in df.columns]
     
@@ -128,8 +155,25 @@ def load_and_categorize(uploaded_file, custom_rules=None):
     df['Category'] = df['Description'].apply(categorize)
     df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce')
     df = df[df['Amount'].notna()]
+    df['data_type'] = 'personal_finance'
     
     return df
+
+def analyze_corporate_data(df):
+    """Analyze corporate overview data"""
+    year_col = next((col for col in df.columns if 'year' in col.lower()), None)
+    revenue_col = next((col for col in df.columns if 'revenue' in col.lower()), None)
+    income_col = next((col for col in df.columns if 'net income' in col.lower() or 'income' in col.lower()), None)
+    marketcap_col = next((col for col in df.columns if 'market cap' in col.lower()), None)
+    employees_col = next((col for col in df.columns if 'employee' in col.lower()), None)
+    
+    return {
+        'year_col': year_col,
+        'revenue_col': revenue_col,
+        'income_col': income_col,
+        'marketcap_col': marketcap_col,
+        'employees_col': employees_col
+    }
 
 def analyze_finances(df, date_range=None):
     df_filtered = df.copy()
@@ -781,17 +825,39 @@ uploaded_files = st.file_uploader("📁 Upload Financial Data (CSV/Excel)", type
 
 if uploaded_files:
     try:
+        # Load and detect data types
         all_dfs = []
+        data_types = []
         for uploaded_file in uploaded_files:
             with st.spinner(f"Processing {uploaded_file.name}..."):
                 custom_rules = get_custom_rules()
                 df = load_and_categorize(uploaded_file, custom_rules)
                 df['Source'] = uploaded_file.name
                 all_dfs.append(df)
+                data_types.append(df['data_type'].iloc[0] if 'data_type' in df.columns else 'unknown')
         
-        combined_df = pd.concat(all_dfs, ignore_index=True)
+        # Check if mixing data types
+        unique_types = set(data_types)
+        if len(unique_types) > 1:
+            st.warning(f"⚠️ Mixed data types detected: {', '.join(unique_types)}. Analyzing files separately.")
         
-        st.success(f"✅ Loaded {len(combined_df)} rows from {len(uploaded_files)} file(s). {len(combined_df[combined_df['Category'] == 'Uncategorized'])} uncategorized (manual review).")
+        # Determine primary data type
+        primary_type = data_types[0] if data_types else 'personal_finance'
+        
+        if primary_type == 'corporate':
+            # Corporate data analysis path
+            combined_df = all_dfs[0]  # For now, analyze first corporate file
+            st.success(f"✅ Loaded corporate overview data from {uploaded_files[0].name}")
+        else:
+            # Personal finance analysis path
+            finance_dfs = [df for df, dtype in zip(all_dfs, data_types) if dtype == 'personal_finance']
+            if finance_dfs:
+                combined_df = pd.concat(finance_dfs, ignore_index=True)
+                st.success(f"✅ Loaded {len(combined_df)} rows from {len(finance_dfs)} file(s). {len(combined_df[combined_df['Category'] == 'Uncategorized'])} uncategorized (manual review).")
+            else:
+                st.error("No valid personal finance data found.")
+                st.stop()
+                
     except ValueError as ve:
         st.error(f"❌ {str(ve)}")
         st.info("💡 **Quick Fix:** Make sure your CSV file has these exact column names: **Date**, **Description**, and **Amount**")
@@ -800,15 +866,103 @@ if uploaded_files:
         st.error(f"❌ Error processing file: {str(e)}")
         st.stop()
     
-    with tab1:
-        st.subheader("📊 Data Preview")
-        st.dataframe(combined_df.head(10), use_container_width=True)
+    # Corporate Data UI
+    if primary_type == 'corporate':
+        col_info = analyze_corporate_data(combined_df)
         
-        col_filter1, col_filter2 = st.columns(2)
-        with col_filter1:
-            start_date = st.date_input("Start Date", value=combined_df['Date'].min())
-        with col_filter2:
-            end_date = st.date_input("End Date", value=combined_df['Date'].max())
+        with tab1:
+            st.subheader("🏢 Corporate Overview")
+            st.dataframe(combined_df, use_container_width=True)
+            
+            if col_info['year_col'] and col_info['revenue_col']:
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    latest_year = combined_df[col_info['year_col']].max()
+                    latest_revenue = combined_df[combined_df[col_info['year_col']] == latest_year][col_info['revenue_col']].iloc[0]
+                    st.metric(f"Latest Revenue ({latest_year})", f"${latest_revenue:.2f}B")
+                
+                with col2:
+                    if col_info['income_col']:
+                        latest_income = combined_df[combined_df[col_info['year_col']] == latest_year][col_info['income_col']].iloc[0]
+                        st.metric(f"Net Income ({latest_year})", f"${latest_income:.2f}B")
+                
+                with col3:
+                    if col_info['marketcap_col']:
+                        latest_cap = combined_df[combined_df[col_info['year_col']] == latest_year][col_info['marketcap_col']].iloc[0]
+                        st.metric(f"Market Cap ({latest_year})", f"${latest_cap:.2f}T")
+                
+                # Revenue trend chart
+                st.subheader("📈 Revenue Trend")
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(combined_df[col_info['year_col']], combined_df[col_info['revenue_col']], marker='o', linewidth=2, markersize=8)
+                ax.set_xlabel('Year')
+                ax.set_ylabel('Revenue (USD Billion)')
+                ax.set_title('Revenue Growth Over Time')
+                ax.grid(True, alpha=0.3)
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                # Income vs Revenue comparison
+                if col_info['income_col']:
+                    st.subheader("💰 Income vs Revenue")
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    x = combined_df[col_info['year_col']]
+                    width = 0.35
+                    x_pos = range(len(x))
+                    ax.bar([p - width/2 for p in x_pos], combined_df[col_info['revenue_col']], width, label='Revenue', alpha=0.8)
+                    ax.bar([p + width/2 for p in x_pos], combined_df[col_info['income_col']], width, label='Net Income', alpha=0.8)
+                    ax.set_xlabel('Year')
+                    ax.set_ylabel('Amount (USD Billion)')
+                    ax.set_title('Revenue vs Net Income Comparison')
+                    ax.set_xticks(x_pos)
+                    ax.set_xticklabels(x)
+                    ax.legend()
+                    ax.grid(True, alpha=0.3, axis='y')
+                    st.pyplot(fig)
+                    plt.close(fig)
+        
+        with tab2:
+            st.subheader("👥 Employee Growth")
+            if col_info['employees_col'] and col_info['year_col']:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(combined_df[col_info['year_col']], combined_df[col_info['employees_col']], marker='s', linewidth=2, markersize=8, color='green')
+                ax.set_xlabel('Year')
+                ax.set_ylabel('Number of Employees')
+                ax.set_title('Employee Growth Over Time')
+                ax.grid(True, alpha=0.3)
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                # Growth rate
+                st.subheader("📊 Growth Metrics")
+                for i in range(1, len(combined_df)):
+                    year_prev = combined_df[col_info['year_col']].iloc[i-1]
+                    year_curr = combined_df[col_info['year_col']].iloc[i]
+                    emp_prev = combined_df[col_info['employees_col']].iloc[i-1]
+                    emp_curr = combined_df[col_info['employees_col']].iloc[i]
+                    growth = ((emp_curr - emp_prev) / emp_prev * 100) if emp_prev > 0 else 0
+                    st.metric(f"{year_prev} → {year_curr}", f"{emp_curr:,} employees", f"{growth:+.1f}%")
+            else:
+                st.info("Employee data not available")
+        
+        with tab3:
+            st.info("Year-over-year comparison available for transaction data only")
+        
+        with tab4:
+            st.info("Seasonal trends available for transaction data only")
+    
+    # Personal Finance Data UI
+    else:
+        with tab1:
+            st.subheader("📊 Data Preview")
+            st.dataframe(combined_df.head(10), use_container_width=True)
+            
+            col_filter1, col_filter2 = st.columns(2)
+            with col_filter1:
+                start_date = st.date_input("Start Date", value=combined_df['Date'].min())
+            with col_filter2:
+                end_date = st.date_input("End Date", value=combined_df['Date'].max())
         
         date_range = (pd.to_datetime(start_date), pd.to_datetime(end_date))
         
@@ -865,67 +1019,67 @@ if uploaded_files:
                     st.dataframe(file_comparison)
                 
                 st.balloons()
-    
-    with tab2:
-        st.subheader("🥧 Expense Breakdown by Subcategory")
-        subcategories = get_expense_subcategories(combined_df)
         
-        if not subcategories.empty and subcategories.sum() > 0:
-            subcategories = subcategories[subcategories > 0]
+        with tab2:
+            st.subheader("🥧 Expense Breakdown by Subcategory")
+            subcategories = get_expense_subcategories(combined_df)
             
-            if not subcategories.empty:
-                col_pie1, col_pie2 = st.columns(2)
+            if not subcategories.empty and subcategories.sum() > 0:
+                subcategories = subcategories[subcategories > 0]
                 
-                with col_pie1:
-                    fig, ax = plt.subplots(figsize=(8, 8))
-                    ax.pie(subcategories.values, labels=subcategories.index, autopct='%1.1f%%', startangle=90)
-                    ax.set_title('Expense Distribution by Subcategory')
-                    st.pyplot(fig)
-                    plt.close(fig)
-                
-                with col_pie2:
-                    st.write("**Breakdown:**")
-                    for subcat, amount in subcategories.items():
-                        st.metric(subcat, f"${amount:,.2f}")
+                if not subcategories.empty:
+                    col_pie1, col_pie2 = st.columns(2)
+                    
+                    with col_pie1:
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        ax.pie(subcategories.values, labels=subcategories.index, autopct='%1.1f%%', startangle=90)
+                        ax.set_title('Expense Distribution by Subcategory')
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    
+                    with col_pie2:
+                        st.write("**Breakdown:**")
+                        for subcat, amount in subcategories.items():
+                            st.metric(subcat, f"${amount:,.2f}")
+                else:
+                    st.info("No expense data available for breakdown.")
             else:
                 st.info("No expense data available for breakdown.")
-        else:
-            st.info("No expense data available for breakdown.")
-    
-    with tab3:
-        st.subheader("📅 Year-over-Year Comparison")
-        yoy_data = year_over_year_analysis(combined_df)
         
-        if yoy_data is not None:
-            st.dataframe(yoy_data)
+        with tab3:
+            st.subheader("📅 Year-over-Year Comparison")
+            yoy_data = year_over_year_analysis(combined_df)
             
-            years = combined_df['Date'].dt.year.unique()
-            if len(years) >= 2:
-                st.write("**Year Comparison:**")
-                for year in sorted(years):
-                    year_data = combined_df[combined_df['Date'].dt.year == year]
-                    total_income = year_data[year_data['Category'] == 'Income']['Amount'].sum()
-                    total_expense = year_data[year_data['Category'] == 'Expense']['Amount'].sum()
-                    st.write(f"**{year}:** Income: ${total_income:,.2f}, Expenses: ${total_expense:,.2f}")
-        else:
-            st.info("Need data from multiple years for year-over-year comparison.")
-    
-    with tab4:
-        st.subheader("🌸 Seasonal Spending Trends")
-        seasonal_data = detect_seasonal_trends(combined_df)
+            if yoy_data is not None:
+                st.dataframe(yoy_data)
+                
+                years = combined_df['Date'].dt.year.unique()
+                if len(years) >= 2:
+                    st.write("**Year Comparison:**")
+                    for year in sorted(years):
+                        year_data = combined_df[combined_df['Date'].dt.year == year]
+                        total_income = year_data[year_data['Category'] == 'Income']['Amount'].sum()
+                        total_expense = year_data[year_data['Category'] == 'Expense']['Amount'].sum()
+                        st.write(f"**{year}:** Income: ${total_income:,.2f}, Expenses: ${total_expense:,.2f}")
+            else:
+                st.info("Need data from multiple years for year-over-year comparison.")
         
-        if not seasonal_data.empty and seasonal_data.sum() > 0:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            seasonal_data.plot(kind='bar', ax=ax, color=['skyblue', 'lightgreen', 'coral', 'gold'])
-            ax.set_title('Seasonal Expense Patterns')
-            ax.set_ylabel('Total Expenses ($)')
-            ax.set_xlabel('Season')
-            plt.xticks(rotation=45)
-            st.pyplot(fig)
-            plt.close(fig)
+        with tab4:
+            st.subheader("🌸 Seasonal Spending Trends")
+            seasonal_data = detect_seasonal_trends(combined_df)
             
-            st.write("**Seasonal Breakdown:**")
-            for season, amount in seasonal_data.items():
-                st.metric(season, f"${amount:,.2f}")
-        else:
-            st.info("No seasonal data available.")
+            if not seasonal_data.empty and seasonal_data.sum() > 0:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                seasonal_data.plot(kind='bar', ax=ax, color=['skyblue', 'lightgreen', 'coral', 'gold'])
+                ax.set_title('Seasonal Expense Patterns')
+                ax.set_ylabel('Total Expenses ($)')
+                ax.set_xlabel('Season')
+                plt.xticks(rotation=45)
+                st.pyplot(fig)
+                plt.close(fig)
+                
+                st.write("**Seasonal Breakdown:**")
+                for season, amount in seasonal_data.items():
+                    st.metric(season, f"${amount:,.2f}")
+            else:
+                st.info("No seasonal data available.")
