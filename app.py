@@ -1426,6 +1426,101 @@ if uploaded_files:
             else:
                 st.info("No recurring transactions detected yet. Upload more data with regular payments!")
         
+        # Enhanced Forecasting with What-If Scenarios
+        st.divider()
+        st.subheader("🔮 Financial Forecasting & What-If Scenarios")
+        
+        col_forecast1, col_forecast2 = st.columns([2, 1])
+        
+        with col_forecast2:
+            st.write("**Forecast Settings:**")
+            forecast_months = st.slider("Forecast Period (months)", 3, 12, 6)
+            
+            st.write("**What-If Scenarios:**")
+            income_change = st.slider("Income Change (%)", -50, 100, 0, step=5,
+                                     help="E.g., +20% for a raise, -10% for reduced hours")
+            expense_change = st.slider("Expense Change (%)", -50, 100, 0, step=5,
+                                       help="E.g., -15% for cost-cutting, +10% for lifestyle changes")
+        
+        with col_forecast1:
+            if len(combined_df) > 3:
+                monthly = combined_df.groupby(combined_df['Date'].dt.to_period('M')).agg({
+                    'Amount': lambda x: x[combined_df['Category'] == 'Income'].sum()
+                }).rename(columns={'Amount': 'Income'})
+                monthly['Expense'] = combined_df[combined_df['Category'] == 'Expense'].groupby(
+                    combined_df['Date'].dt.to_period('M'))['Amount'].sum()
+                
+                if len(monthly) > 2:
+                    # Forecast income
+                    months_num = np.arange(len(monthly)).reshape(-1, 1)
+                    income_values = monthly['Income'].fillna(0).values.reshape(-1, 1)
+                    expense_values = monthly['Expense'].fillna(0).abs().values.reshape(-1, 1)
+                    
+                    income_model = LinearRegression().fit(months_num, income_values)
+                    expense_model = LinearRegression().fit(months_num, expense_values)
+                    
+                    future_months = np.arange(len(monthly), len(monthly) + forecast_months).reshape(-1, 1)
+                    income_forecast_base = income_model.predict(future_months).flatten()
+                    expense_forecast_base = expense_model.predict(future_months).flatten()
+                    
+                    # Apply what-if adjustments
+                    income_forecast = income_forecast_base * (1 + income_change / 100)
+                    expense_forecast = expense_forecast_base * (1 + expense_change / 100)
+                    
+                    # Calculate projected savings
+                    monthly_savings = income_forecast - expense_forecast
+                    cumulative_savings = np.cumsum(monthly_savings)
+                    
+                    # Display metrics
+                    col_m1, col_m2, col_m3 = st.columns(3)
+                    with col_m1:
+                        st.metric("Avg Monthly Income (Forecast)", f"${income_forecast.mean():,.0f}",
+                                 delta=f"{income_change}%" if income_change != 0 else None)
+                    with col_m2:
+                        st.metric("Avg Monthly Expenses (Forecast)", f"${expense_forecast.mean():,.0f}",
+                                 delta=f"{expense_change}%" if expense_change != 0 else None)
+                    with col_m3:
+                        st.metric(f"{forecast_months}-Month Projected Savings", f"${cumulative_savings[-1]:,.0f}",
+                                 delta="Good" if cumulative_savings[-1] > 0 else "Deficit")
+                    
+                    # Visualization
+                    fig, ax = plt.subplots(figsize=(12, 6))
+                    months_labels = [f"Month +{i+1}" for i in range(forecast_months)]
+                    
+                    ax.plot(months_labels, income_forecast, marker='o', label='Forecasted Income', linewidth=2, color='green')
+                    ax.plot(months_labels, expense_forecast, marker='s', label='Forecasted Expenses', linewidth=2, color='red')
+                    ax.fill_between(range(forecast_months), income_forecast, expense_forecast,
+                                   where=(income_forecast >= expense_forecast), alpha=0.3, color='green', label='Surplus')
+                    ax.fill_between(range(forecast_months), income_forecast, expense_forecast,
+                                   where=(income_forecast < expense_forecast), alpha=0.3, color='red', label='Deficit')
+                    
+                    ax.set_xlabel('Forecast Period')
+                    ax.set_ylabel('Amount ($)')
+                    ax.set_title(f'{forecast_months}-Month Financial Forecast')
+                    ax.legend()
+                    ax.grid(True, alpha=0.3)
+                    plt.xticks(rotation=45)
+                    st.pyplot(fig)
+                    
+                    st.download_button(
+                        label="📥 Download Forecast Chart",
+                        data=fig_to_png_download(fig, "financial_forecast"),
+                        file_name="financial_forecast.png",
+                        mime="image/png",
+                        key="download_forecast_chart"
+                    )
+                    plt.close(fig)
+                    
+                    # Insights
+                    if cumulative_savings[-1] > 0:
+                        st.success(f"✅ With these parameters, you'll save ${cumulative_savings[-1]:,.0f} over {forecast_months} months")
+                    else:
+                        st.warning(f"⚠️ With these parameters, you'll have a deficit of ${abs(cumulative_savings[-1]):,.0f} over {forecast_months} months")
+                else:
+                    st.info("Need at least 3 months of data for accurate forecasting")
+            else:
+                st.info("Upload more transaction data to enable forecasting")
+        
         # Savings Goals Tracker
         st.divider()
         st.subheader("🎯 Savings Goals Tracker")
