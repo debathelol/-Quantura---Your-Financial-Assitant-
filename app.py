@@ -1288,9 +1288,80 @@ st.markdown("""
     [data-testid="stSidebar"] button:hover {
         transform: scale(1.02);
     }
+    
+    /* Sticky Navigation Bar */
+    .nav-container {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(139, 92, 246, 0.95));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 15px 30px;
+        margin: -20px -30px 30px -30px;
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .nav-menu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .nav-item {
+        display: inline-block;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    .nav-item:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    .nav-item:active {
+        transform: translateY(-1px) scale(1.02);
+    }
+    
+    /* Smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Section Headers */
+    .section-anchor {
+        scroll-margin-top: 80px;
+    }
 </style>
 
-<div class="main-header">
+<div class="nav-container">
+    <div class="nav-menu">
+        <a href="#home" class="nav-item">🏠 Home</a>
+        <a href="#upload" class="nav-item">📤 Upload Data</a>
+        <a href="#currency" class="nav-item">💱 Currency</a>
+        <a href="#tools" class="nav-item">🪄 Financial Tools</a>
+        <a href="#analysis" class="nav-item">📊 Analysis</a>
+        <a href="#budget" class="nav-item">💰 Budget</a>
+        <a href="#goals" class="nav-item">🎯 Savings Goals</a>
+    </div>
+</div>
+
+<div class="main-header section-anchor" id="home">
     <h1 class="header-title">🚀 FinAutomate</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
     <p class="header-tagline">✨ Let's make your life hassle-free</p>
@@ -1354,6 +1425,7 @@ with st.sidebar:
     st.divider()
     
     if st.session_state.show_currency_section:
+        st.markdown('<div class="section-anchor" id="currency"></div>', unsafe_allow_html=True)
         st.header("🌍 Currency Settings")
         currencies = list(get_exchange_rates().keys())
         selected_currency = st.selectbox(
@@ -1409,6 +1481,7 @@ with st.sidebar:
                 st.error(f"Failed to add rule: {error}")
     
     st.divider()
+    st.markdown('<div class="section-anchor" id="budget"></div>', unsafe_allow_html=True)
     st.subheader("💰 Budget Settings")
     budgets = get_budgets()
     
@@ -1428,6 +1501,7 @@ with st.sidebar:
 # 🪄 Financial Tools Section - Magic of Compounding
 if st.session_state.show_financial_tools:
     st.markdown("---")
+    st.markdown('<div class="section-anchor" id="tools"></div>', unsafe_allow_html=True)
     st.header("🪄 Financial Tools")
     
     with st.expander("💰 Magic of Compounding - Watch Your Money Grow!", expanded=True):
@@ -2907,9 +2981,11 @@ if st.session_state.show_financial_tools:
     
     st.markdown("---")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
-
+st.markdown('<div class="section-anchor" id="upload"></div>', unsafe_allow_html=True)
 uploaded_files = st.file_uploader("📁 Upload Financial Data (CSV/Excel)", type=['csv', 'xlsx'], accept_multiple_files=True)
+
+st.markdown('<div class="section-anchor" id="analysis"></div>', unsafe_allow_html=True)
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
 
 if uploaded_files:
     try:
@@ -3438,6 +3514,7 @@ if uploaded_files:
         
         # Savings Goals Tracker
         st.divider()
+        st.markdown('<div class="section-anchor" id="goals"></div>', unsafe_allow_html=True)
         st.subheader("🎯 Savings Goals Tracker")
         
         col_goals1, col_goals2 = st.columns([2, 1])
