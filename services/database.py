@@ -3,7 +3,14 @@ import os
 import streamlit as st
 
 def get_db_connection():
-    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+    """Get database connection. Returns None if DATABASE_URL not available."""
+    try:
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            return None
+        return psycopg2.connect(db_url)
+    except Exception:
+        return None
 
 def get_custom_rules():
     try:
