@@ -53,7 +53,7 @@ def get_custom_rules():
         conn.close()
         return rules
     except Exception as e:
-        st.sidebar.error(f"Database error loading rules: {str(e)}")
+        # Silently return empty list if database not available
         return []
 
 def add_custom_rule(keyword, category):
@@ -102,7 +102,7 @@ def get_budgets():
         conn.close()
         return budgets
     except Exception as e:
-        st.sidebar.warning(f"Database error loading budgets: {str(e)}")
+        # Silently return empty dict if database not available
         return {}
 
 def set_budget(category, amount):
@@ -139,7 +139,7 @@ def get_savings_goals():
         conn.close()
         return goals
     except Exception as e:
-        st.error(f"Database error loading savings goals: {str(e)}")
+        # Silently return empty list if database not available
         return []
 
 def add_savings_goal(goal_name, target_amount, current_amount, deadline):
