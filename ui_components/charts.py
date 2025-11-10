@@ -21,16 +21,21 @@ def add_plotly_animations(fig, duration=500):
     """
     fig.update_layout(
         transition_duration=duration,
-        updatemenus=[],  # Clear any existing update menus
+        updatemenus=[],
         hovermode='closest'
     )
     
-    # Add smooth transitions for all traces
+    # Add smooth transitions only for traces that support markers
     for trace in fig.data:
-        trace.update(
-            marker=dict(
-                line=dict(width=1, color='rgba(255, 255, 255, 0.3)')
-            )
-        )
+        # Skip Candlestick and other traces that don't support marker property
+        if hasattr(trace, 'marker') and trace.type not in ['candlestick', 'ohlc']:
+            try:
+                trace.update(
+                    marker=dict(
+                        line=dict(width=1, color='rgba(255, 255, 255, 0.3)')
+                    )
+                )
+            except:
+                pass
     
     return fig
