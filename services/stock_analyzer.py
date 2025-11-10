@@ -230,8 +230,19 @@ class StockAnalyzer:
             if not success or benchmark.returns is None:
                 return None, "Unable to fetch benchmark data"
             
-            aligned_returns = pd.concat([self.returns, benchmark.returns], axis=1, join='inner')
+            # Fix timezone issues by converting to date-only index
+            stock_returns_copy = self.returns.copy()
+            benchmark_returns_copy = benchmark.returns.copy()
+            
+            # Normalize to date-only (remove time and timezone)
+            stock_returns_copy.index = stock_returns_copy.index.normalize().tz_localize(None)
+            benchmark_returns_copy.index = benchmark_returns_copy.index.normalize().tz_localize(None)
+            
+            aligned_returns = pd.concat([stock_returns_copy, benchmark_returns_copy], axis=1, join='inner')
             aligned_returns.columns = ['stock', 'benchmark']
+            
+            if len(aligned_returns) < 30:
+                return None, "Insufficient overlapping data between stock and benchmark"
             
             stock_returns = aligned_returns['stock']
             benchmark_returns = aligned_returns['benchmark']
