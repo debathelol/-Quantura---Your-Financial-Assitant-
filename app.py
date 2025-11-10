@@ -3797,20 +3797,12 @@ if st.session_state.show_stock_analyzer:
     with tab1:
         st.subheader("Individual Stock Analysis")
         
-        col_input1, col_input2 = st.columns([2, 1])
-        with col_input1:
-            stock_symbol = st.text_input("Stock Symbol (e.g., AAPL, TSLA, MSFT)", value="AAPL", key="stock_symbol").upper()
-        with col_input2:
-            data_source = st.selectbox("Data Source", ["Alpha Vantage (API)", "Yahoo Finance (Fallback)"], key="data_source")
+        stock_symbol = st.text_input("Stock Symbol (e.g., AAPL, TSLA, MSFT)", value="AAPL", key="stock_symbol").upper()
         
         if st.button("🔍 Analyze Stock", type="primary"):
             with st.spinner(f"Analyzing {stock_symbol}..."):
                 analyzer = StockAnalyzer(stock_symbol)
-                
-                if "Alpha Vantage" in data_source:
-                    success, error = analyzer.fetch_data_alpha_vantage(outputsize='full')
-                else:
-                    success, error = analyzer.fetch_data_yfinance(period='2y')
+                success, error = analyzer.fetch_data_yfinance(period='2y')
                 
                 if not success:
                     st.error(f"❌ {error}")
