@@ -3812,7 +3812,7 @@ if st.session_state.show_stock_analyzer:
                     quote, quote_error = analyzer.get_quote()
                     
                     if quote:
-                        col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+                        col_q1, col_q2, col_q3, col_q4, col_q5 = st.columns(5)
                         with col_q1:
                             st.metric("Current Price", f"${quote['price']:.2f}", f"{quote['change_percent']}")
                         with col_q2:
@@ -3820,7 +3820,9 @@ if st.session_state.show_stock_analyzer:
                         with col_q3:
                             st.metric("Open", f"${quote['open']:.2f}")
                         with col_q4:
-                            st.metric("Day Range", f"${quote['low']:.2f} - ${quote['high']:.2f}")
+                            st.metric("Day Low", f"${quote['low']:.2f}")
+                        with col_q5:
+                            st.metric("Day High", f"${quote['high']:.2f}")
                     
                     st.plotly_chart(create_candlestick_chart(analyzer.data, stock_symbol), use_container_width=True)
                     
