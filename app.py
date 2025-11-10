@@ -3962,15 +3962,27 @@ if st.session_state.show_financial_tools:
 # 📈 Stock Analyzer Section
 if st.session_state.show_stock_analyzer:
     st.markdown('<div class="section-anchor" id="stocks"></div>', unsafe_allow_html=True)
-    st.header("📈 Quantitative Stock Analyzer")
-    st.markdown("**AI-powered stock analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and risk metrics**")
+    st.header("📈 Global Quantitative Stock Analyzer")
+    st.markdown("**🌍 Analyze stocks from ANY country!** AI-powered analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and risk metrics for US, European, Asian, and emerging markets.")
     
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Single Stock Analysis", "📈 Portfolio Analysis", "⚖️ Options Pricing", "🔬 Advanced Analytics"])
     
     with tab1:
-        st.subheader("Individual Stock Analysis")
+        st.subheader("Individual Stock Analysis - Global Markets")
         
-        stock_symbol = st.text_input("Stock Symbol (e.g., AAPL, TSLA, MSFT)", value="AAPL", key="stock_symbol").upper()
+        st.info("🌍 **Supports stocks from ALL global exchanges!** Use ticker suffixes: `.L` (London), `.T` (Tokyo), `.HK` (Hong Kong), `.PA` (Paris), `.DE` (Frankfurt), `.TO` (Toronto), `.AX` (Australia), `.NS` (India NSE), `.BO` (India BSE), `.SA` (Brazil), and more!")
+        
+        col_input, col_examples = st.columns([2, 1])
+        with col_input:
+            stock_symbol = st.text_input("Stock Symbol", value="AAPL", key="stock_symbol", placeholder="Enter any global stock ticker").upper()
+        with col_examples:
+            st.markdown("**📌 Global Examples:**")
+            example = st.selectbox("Quick fill:", ["AAPL (US - Apple)", "TSLA (US - Tesla)", "7203.T (Japan - Toyota)", "0700.HK (HK - Tencent)", "BP.L (UK - BP)", "SAP.DE (Germany - SAP)", "RELIANCE.NS (India - Reliance)", "SHOP.TO (Canada - Shopify)", "BHP.AX (Australia - BHP)"], label_visibility="collapsed")
+            if example:
+                example_ticker = example.split(" ")[0]
+                if st.button("Use this →", key="use_example"):
+                    stock_symbol = example_ticker
+                    st.rerun()
         
         if st.button("🔍 Analyze Stock", type="primary"):
             with st.spinner(f"Analyzing {stock_symbol}..."):
@@ -4122,10 +4134,17 @@ if st.session_state.show_stock_analyzer:
                                 st.error(ai_error)
     
     with tab2:
-        st.subheader("Portfolio Analysis")
-        st.caption("Analyze multiple stocks for diversification and correlation")
+        st.subheader("Portfolio Analysis - Global Diversification")
+        st.caption("Analyze multiple stocks from any exchange for diversification and correlation")
         
-        portfolio_symbols = st.text_input("Enter stock symbols (comma-separated)", value="AAPL,MSFT,GOOGL,TSLA,AMZN", key="portfolio_symbols")
+        st.info("💡 **Mix stocks from different countries** for better diversification! Example: `AAPL,7203.T,BP.L,SAP.DE,RELIANCE.NS`")
+        
+        portfolio_symbols = st.text_input(
+            "Enter stock symbols (comma-separated)", 
+            value="AAPL,MSFT,GOOGL,7203.T,BP.L", 
+            key="portfolio_symbols",
+            help="Mix US and international stocks for global diversification. Use ticker suffixes for non-US markets."
+        )
         
         if st.button("📊 Analyze Portfolio", type="primary"):
             symbols = [s.strip().upper() for s in portfolio_symbols.split(',')]

@@ -45,13 +45,19 @@ Added comprehensive mobile-first responsive design for smooth experience on all 
 ## Technical Implementations
 The system features intelligent data detection to differentiate between "Personal Finance Transactions" and "Corporate Overview Data" using fuzzy column matching. Pandas is used for ETL, robust date parsing, rule-based auto-categorization, and data validation across CSV and Excel formats. Time series analysis aggregates financial data monthly for trend identification. Scikit-learn's Linear Regression is employed for basic financial forecasting. PostgreSQL, accessed via psycopg2, stores user-defined categorization rules, budget settings, and savings goals, ensuring data persistence. ReportLab generates professional, exportable PDF reports. Multi-currency support is provided for 10 currencies with hardcoded exchange rates. The application includes seven comprehensive financial calculators for compounding, car purchases, salary expenditure planning, retirement planning, debt payoff, investment portfolio analysis, and rent vs. buy comparisons, all featuring real-time calculations, Plotly visualizations, and smart insights. An intelligent AI chatbot (OpenAI GPT-4o-mini via Replit AI Integrations) provides personalized financial guidance, conversational Q&A, data-aware responses, and calculator recommendations, maintaining session-based chat history. Automated financial highlights include expense detection, month-over-month spending alerts, and recurring transaction identification.
 
-### AI-Powered Stock Analyzer (November 10, 2025)
-Implemented a comprehensive quantitative stock analysis system with AI-powered insights:
+### AI-Powered Global Stock Analyzer (November 10, 2025)
+Implemented a comprehensive quantitative stock analysis system with AI-powered insights supporting **ALL global exchanges**:
 
 **Data Sources**:
 - **Alpha Vantage API**: Primary source for real-time quotes and historical data (requires ALPHA_VANTAGE_API_KEY)
 - **Yahoo Finance**: Fallback data source via yfinance library
-- **Support**: Stocks, ETFs, and major market indices
+- **Global Market Support**: Stocks, ETFs, and indices from ALL countries including:
+  - **US Markets**: NYSE, NASDAQ (e.g., AAPL, TSLA, MSFT)
+  - **European Markets**: London (.L), Paris (.PA), Frankfurt (.DE), Milan (.MI)
+  - **Asian Markets**: Tokyo (.T), Hong Kong (.HK), Shanghai (.SS), Korea (.KS)
+  - **Emerging Markets**: India NSE (.NS), BSE (.BO), Brazil (.SA), Mexico (.MX)
+  - **Other Markets**: Toronto (.TO), Australia (.AX), and 60+ global exchanges
+- **Ticker Format**: Uses Yahoo Finance suffixes for international stocks (e.g., BP.L for BP London, 7203.T for Toyota Tokyo, RELIANCE.NS for Reliance India)
 
 **Quantitative Analysis Features**:
 1. **Monte Carlo Simulations**: 1000-path price projections with percentile fan charts (5th, 25th, 50th, 75th, 95th)
