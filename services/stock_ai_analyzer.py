@@ -60,7 +60,6 @@ Provide a JSON response with:
                 {"role": "system", "content": "You are an expert quantitative analyst. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
             ],
-            temperature=0.7,
             max_completion_tokens=800
         )
         
@@ -114,7 +113,6 @@ Provide JSON response with:
                 {"role": "system", "content": "You are a portfolio management expert. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
             ],
-            temperature=0.7,
             max_completion_tokens=600
         )
         

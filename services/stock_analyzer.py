@@ -65,27 +65,31 @@ class StockAnalyzer:
             return False, str(e)
     
     def get_quote(self):
-        """Get real-time quote from Alpha Vantage"""
+        """Get quote from the fetched data"""
         try:
-            url = f'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={self.symbol}&apikey={ALPHA_VANTAGE_API_KEY}'
-            response = requests.get(url, timeout=10)
-            data = response.json()
+            if self.data is None or self.data.empty:
+                return None, "No data available"
             
-            if 'Global Quote' not in data:
-                return None, data.get('Note', 'Unable to fetch quote')
+            # Get the most recent data point
+            latest = self.data.iloc[-1]
+            previous = self.data.iloc[-2] if len(self.data) > 1 else latest
             
-            quote = data['Global Quote']
+            price = float(latest['close'])
+            previous_close = float(previous['close'])
+            change = price - previous_close
+            change_percent = f"{(change / previous_close * 100):.2f}%"
+            
             return {
-                'symbol': quote.get('01. symbol', self.symbol),
-                'price': float(quote.get('05. price', 0)),
-                'change': float(quote.get('09. change', 0)),
-                'change_percent': quote.get('10. change percent', '0%'),
-                'volume': int(float(quote.get('06. volume', 0))),
-                'latest_trading_day': quote.get('07. latest trading day', ''),
-                'previous_close': float(quote.get('08. previous close', 0)),
-                'open': float(quote.get('02. open', 0)),
-                'high': float(quote.get('03. high', 0)),
-                'low': float(quote.get('04. low', 0))
+                'symbol': self.symbol,
+                'price': price,
+                'change': change,
+                'change_percent': change_percent,
+                'volume': int(latest['volume']),
+                'latest_trading_day': latest.name.strftime('%Y-%m-%d'),
+                'previous_close': previous_close,
+                'open': float(latest['open']),
+                'high': float(latest['high']),
+                'low': float(latest['low'])
             }, None
         except Exception as e:
             return None, str(e)

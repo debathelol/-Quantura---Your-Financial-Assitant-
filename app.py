@@ -4178,6 +4178,10 @@ if st.session_state.show_stock_analyzer:
         print(f"[DEBUG] Checking display: stock_analyzer={st.session_state.stock_analyzer is not None}")
         if st.session_state.stock_analyzer is not None:
             print(f"[DEBUG] Displaying results for {st.session_state.analyzed_symbol}")
+            # Clear temporary status messages when showing results to avoid confusion
+            st.session_state.lookup_error = None
+            st.session_state.lookup_success = None
+            
             analyzer = st.session_state.stock_analyzer
             quote = st.session_state.stock_quote
             metrics = st.session_state.stock_metrics
