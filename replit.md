@@ -1,6 +1,6 @@
 # Overview
 
-This comprehensive financial analysis application, built with Streamlit and PostgreSQL, offers three major capabilities: (1) Personal Finance Transactions analysis with auto-categorization, budget tracking, and forecasting; (2) Corporate Overview Data with revenue trends and financial ratios; and (3) AI-Powered Quantitative Stock Analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and portfolio optimization. The application aims to be a complete financial management platform for individuals, businesses, and investors with advanced quantitative tools and AI insights.
+**Quantura** is a comprehensive financial analysis application built with Streamlit and PostgreSQL, offering three major capabilities: (1) Personal Finance Transactions analysis with auto-categorization, budget tracking, and forecasting; (2) Corporate Overview Data with revenue trends and financial ratios; and (3) AI-Powered Quantitative Stock Analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and portfolio optimization. The application aims to be a complete financial management platform for individuals, businesses, and investors with advanced quantitative tools and AI insights.
 
 # User Preferences
 

@@ -922,11 +922,11 @@ def chat_with_ai(user_message, context, chat_history):
         print(f"Error initializing OpenAI client: {str(e)}")
         return "Sorry, I'm having trouble connecting to the AI service. Please check that the AI integration is properly configured and try again."
     
-    system_prompt = f"""You are a helpful financial assistant for FinAutomate, a personal finance management app.
+    system_prompt = f"""You are a helpful financial assistant for Quantura, a personal finance management app.
 
 You help users understand their finances, provide budget advice, and guide them to use the app's calculators.
 
-Available Tools in FinAutomate:
+Available Tools in Quantura:
 1. Magic of Compounding Calculator - For investment growth projections
 2. Car Purchase Calculator (20-5-10 Rule) - For car affordability checks
 3. Salary Expenditure Planner - For budget allocation strategies
@@ -978,7 +978,7 @@ Guidelines:
         else:
             return f"I encountered an unexpected error. Please try again. If the problem persists, contact support."
 
-st.set_page_config(page_title="FinAutomate", layout="wide")
+st.set_page_config(page_title="Quantura", layout="wide")
 
 # Dashboard Customization State
 if 'show_company_section' not in st.session_state:
@@ -2078,7 +2078,7 @@ st.markdown("""
 <div id="home" class="section-anchor"></div>
 
 <div class="main-header">
-    <h1 class="header-title">🚀 FinAutomate</h1>
+    <h1 class="header-title">🚀 Quantura</h1>
     <p class="header-subtitle">Transform Your Financial Data into Actionable Insights</p>
     <p class="header-tagline">✨ Let's make your financial life hassle-free</p>
     <div class="features-grid">
