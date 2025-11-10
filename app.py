@@ -817,6 +817,96 @@ def get_financial_context(df=None):
     
     return context
 
+def get_ai_budget_recommendations(df):
+    """Use AI to analyze spending patterns and recommend optimal budgets"""
+    try:
+        client = init_openai_client()
+    except Exception as e:
+        print(f"Error initializing OpenAI client: {str(e)}")
+        return None, "AI service unavailable. Please check the configuration."
+    
+    if df is None or df.empty:
+        return None, "No transaction data available. Please upload your financial data first."
+    
+    analysis_context = {}
+    
+    if 'Category' in df.columns and 'Amount' in df.columns:
+        try:
+            category_totals = df.groupby('Category')['Amount'].sum().to_dict()
+            analysis_context['category_spending'] = {k: float(v) for k, v in category_totals.items()}
+            analysis_context['total_spending'] = float(df['Amount'].sum())
+            
+            if 'Date' in df.columns:
+                df_copy = df.copy()
+                df_copy['Date'] = pd.to_datetime(df_copy['Date'])
+                months = (df_copy['Date'].max() - df_copy['Date'].min()).days / 30.44
+                if months > 0:
+                    analysis_context['months_of_data'] = round(months, 1)
+                    monthly_avg = df_copy.groupby(['Category', pd.Grouper(key='Date', freq='M')])['Amount'].sum().reset_index()
+                    monthly_category_avg = monthly_avg.groupby('Category')['Amount'].mean().to_dict()
+                    analysis_context['monthly_avg_by_category'] = {k: float(v) for k, v in monthly_category_avg.items()}
+        except Exception as e:
+            print(f"Warning: Failed to analyze spending data: {str(e)}")
+            return None, f"Failed to analyze spending data: {str(e)}"
+    
+    current_budgets = get_budgets()
+    analysis_context['current_budgets'] = {k: float(v) for k, v in current_budgets.items()}
+    
+    prompt = f"""Analyze this user's spending patterns and recommend optimal monthly budgets for Income, Expense, and Investment categories.
+
+Spending Data:
+{json.dumps(analysis_context, indent=2)}
+
+Please provide:
+1. Recommended monthly budgets for Income, Expense, and Investment
+2. Brief explanation (2-3 sentences) of why these budgets make sense based on their spending patterns
+3. One specific actionable tip
+
+Format your response as JSON:
+{{
+    "budgets": {{"Income": <amount>, "Expense": <amount>, "Investment": <amount>}},
+    "explanation": "<your explanation>",
+    "tip": "<actionable tip>"
+}}"""
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert financial advisor who analyzes spending patterns and provides practical budget recommendations. Always respond with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        result_text = response.choices[0].message.content
+        result_text = result_text.strip()
+        if result_text.startswith("```json"):
+            result_text = result_text[7:]
+        if result_text.startswith("```"):
+            result_text = result_text[3:]
+        if result_text.endswith("```"):
+            result_text = result_text[:-3]
+        result_text = result_text.strip()
+        
+        result = json.loads(result_text)
+        return result, None
+        
+    except json.JSONDecodeError as e:
+        print(f"Error parsing AI response: {str(e)}")
+        return None, "AI returned invalid format. Please try again."
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Error calling OpenAI API: {error_msg}")
+        
+        if "rate_limit" in error_msg.lower():
+            return None, "Too many requests. Please wait a moment and try again."
+        elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+            return None, "AI service configuration issue. Please contact support."
+        else:
+            return None, "AI service error. Please try again."
+
 def chat_with_ai(user_message, context, chat_history):
     """Chat with AI about financial data"""
     try:
