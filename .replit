@@ -5,8 +5,9 @@ channel = "stable-25_05"
 packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "libxcrypt", "pkg-config", "qhull", "tcl", "tk", "xsimd"]
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "static"
 run = ["streamlit", "run", "app.py", "--server.port", "5000"]
+publicDir = "app.py"
 
 [workflows]
 runButton = "Project"
