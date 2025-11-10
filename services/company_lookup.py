@@ -1,5 +1,18 @@
 import os
 import requests
+from openai import OpenAI
+
+def init_openai_client():
+    """Initialize OpenAI client using Replit AI Integrations"""
+    try:
+        client = OpenAI(
+            api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
+            base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+        )
+        return client
+    except Exception as e:
+        print(f"[AI Lookup] Error initializing OpenAI client: {str(e)}")
+        return None
 
 POPULAR_COMPANIES = {
     # US Tech Giants
@@ -143,12 +156,96 @@ POPULAR_COMPANIES = {
 }
 
 
-def lookup_company_ticker(company_name: str) -> tuple[str, str]:
+def get_ticker_from_ai(company_name: str) -> tuple[str, str]:
     """
-    Convert a company name to its stock ticker symbol.
+    Use AI to convert company name to ticker symbol.
     
     Args:
-        company_name: Company name (e.g., "Apple", "Tesla", "Toyota")
+        company_name: Company name
+    
+    Returns:
+        tuple: (ticker_symbol, company_full_name) or ("", "") if not found
+    """
+    try:
+        client = init_openai_client()
+        if not client:
+            print(f"[AI Lookup] OpenAI client initialization failed")
+            return "", ""
+        
+        print(f"[AI Lookup] Looking up company: {company_name}")
+        
+        prompt = f"""You are a financial expert. Convert the company name to its stock ticker symbol.
+
+Company name: "{company_name}"
+
+Instructions:
+1. Identify the correct stock ticker symbol (e.g., AAPL for Apple, TSLA for Tesla)
+2. For international stocks, include the exchange suffix:
+   - .L for London Stock Exchange (e.g., BP.L)
+   - .T for Tokyo Stock Exchange (e.g., 7203.T for Toyota)
+   - .HK for Hong Kong (e.g., 0700.HK for Tencent)
+   - .NS for India NSE (e.g., RELIANCE.NS)
+   - .KS for Korea (e.g., 005930.KS for Samsung)
+   - .DE for Frankfurt (e.g., VOW3.DE for Volkswagen)
+   - .PA for Paris (e.g., MC.PA for LVMH)
+   - .AX for Australia, .TO for Toronto, .SA for Brazil, etc.
+3. Return the ticker symbol and the full official company name
+4. If you're unsure or the company doesn't exist, return "UNKNOWN"
+
+Respond in this exact format:
+TICKER: <ticker_symbol>
+NAME: <full company name>
+
+Examples:
+- "Apple" → TICKER: AAPL, NAME: Apple Inc.
+- "Toyota" → TICKER: 7203.T, NAME: Toyota Motor Corporation
+- "BP" → TICKER: BP.L, NAME: BP plc
+- "Samsung Electronics" → TICKER: 005930.KS, NAME: Samsung Electronics Co., Ltd.
+"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a financial market expert who knows stock ticker symbols for companies worldwide."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,
+            max_tokens=150
+        )
+        
+        result = response.choices[0].message.content.strip()
+        print(f"[AI Lookup] AI response: {result}")
+        
+        # Parse the response
+        lines = result.split('\n')
+        ticker = ""
+        full_name = ""
+        
+        for line in lines:
+            if line.startswith("TICKER:"):
+                ticker = line.replace("TICKER:", "").strip()
+            elif line.startswith("NAME:"):
+                full_name = line.replace("NAME:", "").strip()
+        
+        # Check if valid
+        if ticker and ticker.upper() != "UNKNOWN":
+            print(f"[AI Lookup] Success: {company_name} → {ticker} ({full_name})")
+            return ticker.upper(), full_name
+        
+        print(f"[AI Lookup] Failed: AI returned UNKNOWN or invalid response")
+        return "", ""
+        
+    except Exception as e:
+        print(f"[AI Lookup] Exception: {str(e)}")
+        return "", ""
+
+
+def lookup_company_ticker(company_name: str) -> tuple[str, str]:
+    """
+    Convert a company name to its stock ticker symbol using AI.
+    
+    Args:
+        company_name: Company name (e.g., "Apple", "Tesla", "Toyota", "Samsung")
     
     Returns:
         tuple: (ticker_symbol, status_message)
@@ -160,40 +257,24 @@ def lookup_company_ticker(company_name: str) -> tuple[str, str]:
     
     search_term = company_name.strip().lower()
     
-    # First check popular companies database
+    # First check popular companies database (fast cache)
     if search_term in POPULAR_COMPANIES:
         ticker = POPULAR_COMPANIES[search_term]
         return ticker, f"✓ Found {company_name.title()} → {ticker}"
     
-    # Try Alpha Vantage API if available
-    api_key = os.getenv('ALPHA_VANTAGE_API_KEY')
-    if api_key:
-        try:
-            url = f"https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={company_name}&apikey={api_key}"
-            response = requests.get(url, timeout=5)
-            
-            if response.status_code == 200:
-                data = response.json()
-                matches = data.get('bestMatches', [])
-                
-                if matches:
-                    # Get the best match (first result)
-                    best_match = matches[0]
-                    ticker = best_match.get('1. symbol', '')
-                    match_name = best_match.get('2. name', '')
-                    
-                    if ticker:
-                        return ticker, f"✓ Found {match_name} → {ticker}"
-        except Exception as e:
-            pass
+    # Use AI to find the ticker (supports unlimited companies!)
+    ticker, full_name = get_ticker_from_ai(company_name)
+    if ticker:
+        return ticker, f"✓ Found {full_name} → {ticker}"
     
-    # If not found, try as-is (user might know the ticker)
-    if len(search_term) <= 10 and search_term.replace('.', '').replace('-', '').isalnum():
+    # If AI fails, only accept as ticker if it looks like a real ticker (all caps, short, with optional exchange suffix)
+    if len(search_term) <= 6 and search_term.replace('.', '').replace('-', '').isalpha() and company_name.isupper():
+        # User entered something like "AAPL" or "BP.L" - use as-is
         ticker = company_name.upper()
         return ticker, f"Using ticker: {ticker}"
     
     # Not found
-    return "", f"❌ Company '{company_name}' not found. Try: Apple, Tesla, Microsoft, Toyota, Samsung, etc."
+    return "", f"❌ Company '{company_name}' not recognized. AI couldn't find this company. Please check the spelling or try the exact stock ticker symbol."
 
 
 def get_company_suggestions(partial_name: str, limit: int = 5) -> list[tuple[str, str]]:
