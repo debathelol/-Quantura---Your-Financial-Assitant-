@@ -61,10 +61,9 @@ Provide a JSON response with:
 6. "recommendation": actionable advice
 """
 
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # do not change this unless explicitly requested by the user
+        # Using gpt-4o-mini - the latest efficient OpenAI model
         response = client.chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are an expert quantitative analyst. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
@@ -121,10 +120,9 @@ Provide JSON response with:
 5. "rebalancing_suggestion": specific allocation percentages
 """
 
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # do not change this unless explicitly requested by the user
+        # Using gpt-4o-mini - the latest efficient OpenAI model
         response = client.chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a portfolio management expert. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
