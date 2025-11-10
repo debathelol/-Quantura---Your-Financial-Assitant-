@@ -1563,13 +1563,13 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 999;
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(139, 92, 246, 0.95));
+        background: linear-gradient(135deg, rgba(30, 58, 138, 0.98), rgba(88, 28, 135, 0.98));
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 15px 30px;
         margin: -20px -30px 30px -30px;
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
     }
     
     .nav-menu {
@@ -1583,24 +1583,34 @@ st.markdown("""
     .nav-item {
         display: inline-block;
         padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.35);
         border-radius: 12px;
-        color: white;
+        color: #ffffff !important;
         text-decoration: none;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 14px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         cursor: pointer;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
     }
     
+    /* Force white text on navigation links */
+    .nav-item,
+    .nav-item:link,
+    .nav-item:visited,
+    .nav-item:active {
+        color: #ffffff !important;
+    }
+    
     .nav-item:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.4);
         transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
     
     .nav-item:active {
