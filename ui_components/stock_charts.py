@@ -186,10 +186,15 @@ def create_correlation_heatmap(stocks_data):
 
 def create_risk_return_scatter(stocks_metrics):
     """Create risk-return scatter plot"""
+    import numpy as np
+    
     symbols = [m['symbol'] for m in stocks_metrics]
     returns = [m['mean_return'] * 100 for m in stocks_metrics]
     volatilities = [m['volatility'] * 100 for m in stocks_metrics]
     sharpe_ratios = [m['sharpe_ratio'] for m in stocks_metrics]
+    
+    # Replace NaN Sharpe ratios with 0 to avoid Plotly errors
+    sharpe_ratios_clean = [0 if np.isnan(s) else s for s in sharpe_ratios]
     
     fig = go.Figure()
     
@@ -198,8 +203,8 @@ def create_risk_return_scatter(stocks_metrics):
         y=returns,
         mode='markers+text',
         marker=dict(
-            size=[abs(s) * 20 + 10 for s in sharpe_ratios],
-            color=sharpe_ratios,
+            size=[abs(s) * 20 + 10 for s in sharpe_ratios_clean],
+            color=sharpe_ratios_clean,
             colorscale='RdYlGn',
             showscale=True,
             colorbar=dict(title="Sharpe Ratio"),
