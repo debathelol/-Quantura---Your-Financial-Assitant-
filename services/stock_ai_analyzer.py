@@ -3,12 +3,21 @@ import json
 from openai import OpenAI
 
 def _get_openai_client():
-    """Lazy initialization of OpenAI client using Replit AI integrations"""
+    """Lazy initialization of OpenAI client - works on both Replit and Streamlit Cloud"""
     try:
-        return OpenAI(
-            api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
-            base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
-        )
+        # Check for API key in both Replit and Streamlit Cloud formats
+        api_key = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return None
+        
+        base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+        
+        if base_url:
+            # Replit integration
+            return OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            # Streamlit Cloud or standard OpenAI
+            return OpenAI(api_key=api_key)
     except Exception as e:
         return None
 
@@ -63,7 +72,11 @@ Provide a JSON response with:
             max_completion_tokens=800
         )
         
-        content = response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        if not content or content.strip() == "":
+            return None, "AI returned empty response. Please check your API key and quota."
+        
+        content = content.strip()
         
         if content.startswith('```json'):
             content = content[7:]
@@ -71,14 +84,17 @@ Provide a JSON response with:
             content = content[:-3]
         content = content.strip()
         
+        if not content:
+            return None, "AI response was empty after parsing. Please check your API key."
+        
         analysis = json.loads(content)
         
         return analysis, None
         
     except json.JSONDecodeError as e:
-        return None, f"Failed to parse AI response: {str(e)}"
+        return None, f"Failed to parse AI response: {str(e)}. Check your OpenAI API key in Settings."
     except Exception as e:
-        return None, f"AI analysis error: {str(e)}"
+        return None, f"AI analysis error: {str(e)}. Verify your OPENAI_API_KEY is set correctly."
 
 def get_ai_portfolio_insights(stocks_data):
     """Get AI insights on portfolio diversification and risk"""
