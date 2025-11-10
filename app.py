@@ -4138,20 +4138,26 @@ if st.session_state.show_stock_analyzer:
                     print(f"[DEBUG] About to call st.rerun()")
                     st.rerun()
                 else:
+                    print(f"[DEBUG] Ticker found, starting analysis for {ticker}")
                     st.session_state.lookup_error = None
                     st.session_state.lookup_success = message
                     
                     with st.spinner(f"Analyzing {company_name}..."):
+                        print(f"[DEBUG] Creating StockAnalyzer for {ticker}")
                         analyzer = StockAnalyzer(ticker)
+                        print(f"[DEBUG] Fetching data from yfinance...")
                         success, error = analyzer.fetch_data_yfinance(period='2y')
+                        print(f"[DEBUG] Fetch result: success={success}, error={error}")
                         
                         if not success:
+                            print(f"[DEBUG] Fetch failed: {error}")
                             st.session_state.lookup_error = f"❌ {error}"
                             st.session_state.stock_analyzer = None
                             st.session_state.lookup_success = None
                             st.session_state.analysis_success = None
                             st.rerun()
                         else:
+                            print(f"[DEBUG] Fetch succeeded, getting quote and metrics")
                             st.session_state.analysis_success = f"✅ Analysis complete for {company_name}!"
                             st.session_state.stock_analyzer = analyzer
                             st.session_state.analyzed_symbol = ticker
@@ -4159,19 +4165,25 @@ if st.session_state.show_stock_analyzer:
                             
                             # Get quote and metrics once
                             quote, _ = analyzer.get_quote()
+                            print(f"[DEBUG] Quote: {quote}")
                             st.session_state.stock_quote = quote
                             
                             metrics, _ = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
+                            print(f"[DEBUG] Metrics: {metrics is not None}")
                             st.session_state.stock_metrics = metrics
+                            print(f"[DEBUG] About to rerun to display results")
                             st.rerun()
         
         # Display analysis if data exists
+        print(f"[DEBUG] Checking display: stock_analyzer={st.session_state.stock_analyzer is not None}")
         if st.session_state.stock_analyzer is not None:
+            print(f"[DEBUG] Displaying results for {st.session_state.analyzed_symbol}")
             analyzer = st.session_state.stock_analyzer
             quote = st.session_state.stock_quote
             metrics = st.session_state.stock_metrics
             stock_symbol = st.session_state.analyzed_symbol
             
+            print(f"[DEBUG] Quote exists: {quote is not None}")
             if quote:
                 # Enhanced quote metrics with visual hierarchy
                 render_metric_row([
