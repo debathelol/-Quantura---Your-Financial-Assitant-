@@ -2079,14 +2079,6 @@ with st.sidebar:
         st.caption("💡 Enable 'Currency Converter' above to change currency settings")
     
     st.divider()
-    st.header("Quick Start")
-    st.markdown("""
-    - **Sample Data**: Use sample_data.csv with Date (YYYY-MM-DD), Description, Amount.
-    - **Example**: Salary=Income, Rent=Expense, Stock=Investment.
-    - **Tweak**: Add custom rules below!
-    """)
-    
-    st.divider()
     st.subheader("⚙️ Custom Rules")
     custom_rules = get_custom_rules()
     
@@ -2124,15 +2116,24 @@ with st.sidebar:
     categories = ["Income", "Expense", "Investment"]
     for cat in categories:
         current_budget = budgets.get(cat, 0)
-        budget_amount = st.number_input(f"{cat} Budget", value=float(current_budget), min_value=0.0, step=100.0, key=f"budget_{cat}")
-        if budget_amount != current_budget:
-            if st.button(f"Set {cat} Budget", key=f"set_budget_{cat}"):
-                success, error = set_budget(cat, budget_amount)
-                if success:
-                    st.success(f"Budget set for {cat}")
-                    st.rerun()
-                else:
-                    st.error(f"Failed to set budget: {error}")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            budget_amount = st.text_input(f"{cat} Budget", value=str(int(current_budget)), key=f"budget_{cat}")
+        with col2:
+            st.write("")
+            st.write("")
+            if st.button("Set", key=f"set_budget_{cat}"):
+                try:
+                    budget_value = float(budget_amount)
+                    if budget_value != current_budget:
+                        success, error = set_budget(cat, budget_value)
+                        if success:
+                            st.success(f"✓ {cat}")
+                            st.rerun()
+                        else:
+                            st.error(f"Error: {error}")
+                except ValueError:
+                    st.error("Invalid amount")
 
 # 🪄 Financial Tools Section - Magic of Compounding
 if st.session_state.show_financial_tools:
