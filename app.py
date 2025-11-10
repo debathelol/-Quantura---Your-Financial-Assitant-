@@ -22,6 +22,7 @@ from openai import OpenAI
 import json
 from services.stock_analyzer import StockAnalyzer
 from services.stock_ai_analyzer import get_ai_stock_analysis, get_ai_portfolio_insights
+from services.company_lookup import lookup_company_ticker
 from ui_components.stock_charts import (
     create_candlestick_chart, create_monte_carlo_chart, create_arima_forecast_chart,
     create_correlation_heatmap, create_risk_return_scatter, create_volatility_chart,
@@ -4075,40 +4076,37 @@ if st.session_state.show_stock_analyzer:
     with tab1:
         st.subheader("Individual Stock Analysis - Global Markets")
         
-        st.info("🌍 **Supports stocks from ALL global exchanges!** Use ticker suffixes: `.L` (London), `.T` (Tokyo), `.HK` (Hong Kong), `.PA` (Paris), `.DE` (Frankfurt), `.TO` (Toronto), `.AX` (Australia), `.NS` (India NSE), `.BO` (India BSE), `.SA` (Brazil), and more!")
+        st.info("🌍 **Just type the company name!** Examples: Apple, Tesla, Toyota, Samsung, Microsoft, BP, Reliance, Shopify - we support 100+ global companies!")
         
-        # Initialize session state for stock symbol
-        if 'selected_stock_symbol' not in st.session_state:
-            st.session_state.selected_stock_symbol = "AAPL"
+        # Initialize session state
+        if 'company_input' not in st.session_state:
+            st.session_state.company_input = ""
+        if 'resolved_ticker' not in st.session_state:
+            st.session_state.resolved_ticker = ""
         
-        col_input, col_examples = st.columns([2, 1])
-        with col_examples:
-            st.markdown("**📌 Global Examples:**")
-            example = st.selectbox("Quick fill:", [
-                "AAPL (US - Apple)", 
-                "TSLA (US - Tesla)", 
-                "7203.T (Japan - Toyota)", 
-                "0700.HK (HK - Tencent)", 
-                "BP.L (UK - BP)", 
-                "SAP.DE (Germany - SAP)", 
-                "TCS.NS (India - TCS)",
-                "RELIANCE.NS (India - Reliance)", 
-                "SHOP.TO (Canada - Shopify)", 
-                "BHP.AX (Australia - BHP)"
-            ], label_visibility="collapsed", key="example_selector")
-            if st.button("Use this →", key="use_example", type="secondary"):
-                st.session_state.selected_stock_symbol = example.split(" ")[0]
-                st.rerun()
+        # Initialize lookup status states
+        if 'lookup_error' not in st.session_state:
+            st.session_state.lookup_error = None
+        if 'lookup_success' not in st.session_state:
+            st.session_state.lookup_success = None
+        if 'analysis_success' not in st.session_state:
+            st.session_state.analysis_success = None
         
-        with col_input:
-            stock_symbol = st.text_input(
-                "Stock Symbol", 
-                value=st.session_state.selected_stock_symbol, 
-                placeholder="Enter any global stock ticker",
-                help="Examples: AAPL (US), 7203.T (Japan), BP.L (UK), TCS.NS (India)"
-            ).upper()
-            # Update session state when user types
-            st.session_state.selected_stock_symbol = stock_symbol
+        # Show lookup status messages
+        if st.session_state.lookup_error:
+            st.error(st.session_state.lookup_error)
+        if st.session_state.lookup_success:
+            st.info(st.session_state.lookup_success)
+        if st.session_state.analysis_success:
+            st.success(st.session_state.analysis_success)
+        
+        # Simple company name input
+        company_name = st.text_input(
+            "Company Name", 
+            value=st.session_state.company_input,
+            placeholder="Type company name (e.g., Apple, Tesla, Microsoft, Toyota, Samsung...)",
+            help="Just type the company name - no ticker symbols needed!"
+        )
         
         # Store analyzer in session state
         if 'stock_analyzer' not in st.session_state:
@@ -4117,25 +4115,57 @@ if st.session_state.show_stock_analyzer:
             st.session_state.stock_metrics = None
             st.session_state.analyzed_symbol = None
         
-        if st.button("🔍 Analyze Stock", type="primary"):
-            with st.spinner(f"Analyzing {stock_symbol}..."):
-                analyzer = StockAnalyzer(stock_symbol)
-                success, error = analyzer.fetch_data_yfinance(period='2y')
+        if st.button("🔍 Analyze", type="primary"):
+            if not company_name or not company_name.strip():
+                st.error("❌ Please enter a company name")
+                # Clear previous results
+                st.session_state.stock_analyzer = None
+                st.session_state.stock_quote = None
+                st.session_state.stock_metrics = None
+                st.session_state.analyzed_symbol = None
+            else:
+                # Convert company name to ticker symbol
+                ticker, message = lookup_company_ticker(company_name)
                 
-                if not success:
-                    st.error(f"❌ {error}")
+                if not ticker:
+                    # Clear previous results when lookup fails
                     st.session_state.stock_analyzer = None
+                    st.session_state.stock_quote = None
+                    st.session_state.stock_metrics = None
+                    st.session_state.analyzed_symbol = None
+                    st.session_state.lookup_error = message
+                    st.session_state.lookup_success = None
+                    st.session_state.analysis_success = None
+                    st.rerun()
                 else:
-                    st.success(f"✓ Data fetched for {stock_symbol}")
-                    st.session_state.stock_analyzer = analyzer
-                    st.session_state.analyzed_symbol = stock_symbol
+                    st.session_state.lookup_error = None
+                    st.session_state.lookup_success = message
+                    st.session_state.company_input = company_name
+                    st.session_state.resolved_ticker = ticker
                     
-                    # Get quote and metrics once
-                    quote, _ = analyzer.get_quote()
-                    st.session_state.stock_quote = quote
-                    
-                    metrics, _ = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
-                    st.session_state.stock_metrics = metrics
+                    with st.spinner(f"Analyzing {company_name}..."):
+                        analyzer = StockAnalyzer(ticker)
+                        success, error = analyzer.fetch_data_yfinance(period='2y')
+                        
+                        if not success:
+                            st.session_state.lookup_error = f"❌ {error}"
+                            st.session_state.stock_analyzer = None
+                            st.session_state.lookup_success = None
+                            st.session_state.analysis_success = None
+                            st.rerun()
+                        else:
+                            st.session_state.analysis_success = f"✅ Analysis complete for {company_name}!"
+                            st.session_state.stock_analyzer = analyzer
+                            st.session_state.analyzed_symbol = ticker
+                            st.session_state.analyzed_company = company_name
+                            
+                            # Get quote and metrics once
+                            quote, _ = analyzer.get_quote()
+                            st.session_state.stock_quote = quote
+                            
+                            metrics, _ = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
+                            st.session_state.stock_metrics = metrics
+                            st.rerun()
         
         # Display analysis if data exists
         if st.session_state.stock_analyzer is not None:
