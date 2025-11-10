@@ -4076,13 +4076,7 @@ if st.session_state.show_stock_analyzer:
     with tab1:
         st.subheader("Individual Stock Analysis - Global Markets")
         
-        st.info("🌍 **Just type the company name!** Examples: Apple, Tesla, Toyota, Samsung, Microsoft, BP, Reliance, Shopify - we support 100+ global companies!")
-        
-        # Initialize session state
-        if 'company_input' not in st.session_state:
-            st.session_state.company_input = ""
-        if 'resolved_ticker' not in st.session_state:
-            st.session_state.resolved_ticker = ""
+        st.info("🤖 **AI-Powered: Type ANY company name!** Our AI recognizes thousands of companies worldwide. Examples: Apple, Tesla, Toyota, Samsung, Starbucks, Nike, Walmart, Ferrari, L'Oréal, Spotify, Adidas - and many more!")
         
         # Initialize lookup status states
         if 'lookup_error' not in st.session_state:
@@ -4100,12 +4094,12 @@ if st.session_state.show_stock_analyzer:
         if st.session_state.analysis_success:
             st.success(st.session_state.analysis_success)
         
-        # Simple company name input
+        # Simple company name input - Streamlit manages state via key
         company_name = st.text_input(
             "Company Name", 
-            value=st.session_state.company_input,
             placeholder="Type company name (e.g., Apple, Tesla, Microsoft, Toyota, Samsung...)",
-            help="Just type the company name - no ticker symbols needed!"
+            help="Just type the company name - no ticker symbols needed!",
+            key="company_name_input"
         )
         
         # Store analyzer in session state
@@ -4125,23 +4119,27 @@ if st.session_state.show_stock_analyzer:
                 st.session_state.analyzed_symbol = None
             else:
                 # Convert company name to ticker symbol
+                print(f"[DEBUG] Looking up company: '{company_name}'")
                 ticker, message = lookup_company_ticker(company_name)
+                print(f"[DEBUG] Lookup result: ticker='{ticker}', message='{message}'")
                 
                 if not ticker:
-                    # Clear previous results when lookup fails
+                    print(f"[DEBUG] Ticker is empty - clearing state and showing error")
+                    # Clear ALL previous data and messages when lookup fails
                     st.session_state.stock_analyzer = None
                     st.session_state.stock_quote = None
                     st.session_state.stock_metrics = None
                     st.session_state.analyzed_symbol = None
+                    st.session_state.analyzed_company = None
+                    st.session_state.company_name_input = ""  # Clear the text input
                     st.session_state.lookup_error = message
                     st.session_state.lookup_success = None
                     st.session_state.analysis_success = None
+                    print(f"[DEBUG] About to call st.rerun()")
                     st.rerun()
                 else:
                     st.session_state.lookup_error = None
                     st.session_state.lookup_success = message
-                    st.session_state.company_input = company_name
-                    st.session_state.resolved_ticker = ticker
                     
                     with st.spinner(f"Analyzing {company_name}..."):
                         analyzer = StockAnalyzer(ticker)
