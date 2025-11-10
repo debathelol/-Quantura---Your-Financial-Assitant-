@@ -3972,17 +3972,38 @@ if st.session_state.show_stock_analyzer:
         
         st.info("🌍 **Supports stocks from ALL global exchanges!** Use ticker suffixes: `.L` (London), `.T` (Tokyo), `.HK` (Hong Kong), `.PA` (Paris), `.DE` (Frankfurt), `.TO` (Toronto), `.AX` (Australia), `.NS` (India NSE), `.BO` (India BSE), `.SA` (Brazil), and more!")
         
+        # Initialize session state for stock symbol
+        if 'selected_stock_symbol' not in st.session_state:
+            st.session_state.selected_stock_symbol = "AAPL"
+        
         col_input, col_examples = st.columns([2, 1])
-        with col_input:
-            stock_symbol = st.text_input("Stock Symbol", value="AAPL", key="stock_symbol", placeholder="Enter any global stock ticker").upper()
         with col_examples:
             st.markdown("**📌 Global Examples:**")
-            example = st.selectbox("Quick fill:", ["AAPL (US - Apple)", "TSLA (US - Tesla)", "7203.T (Japan - Toyota)", "0700.HK (HK - Tencent)", "BP.L (UK - BP)", "SAP.DE (Germany - SAP)", "RELIANCE.NS (India - Reliance)", "SHOP.TO (Canada - Shopify)", "BHP.AX (Australia - BHP)"], label_visibility="collapsed")
-            if example:
-                example_ticker = example.split(" ")[0]
-                if st.button("Use this →", key="use_example"):
-                    stock_symbol = example_ticker
-                    st.rerun()
+            example = st.selectbox("Quick fill:", [
+                "AAPL (US - Apple)", 
+                "TSLA (US - Tesla)", 
+                "7203.T (Japan - Toyota)", 
+                "0700.HK (HK - Tencent)", 
+                "BP.L (UK - BP)", 
+                "SAP.DE (Germany - SAP)", 
+                "TCS.NS (India - TCS)",
+                "RELIANCE.NS (India - Reliance)", 
+                "SHOP.TO (Canada - Shopify)", 
+                "BHP.AX (Australia - BHP)"
+            ], label_visibility="collapsed", key="example_selector")
+            if st.button("Use this →", key="use_example", type="secondary"):
+                st.session_state.selected_stock_symbol = example.split(" ")[0]
+                st.rerun()
+        
+        with col_input:
+            stock_symbol = st.text_input(
+                "Stock Symbol", 
+                value=st.session_state.selected_stock_symbol, 
+                placeholder="Enter any global stock ticker",
+                help="Examples: AAPL (US), 7203.T (Japan), BP.L (UK), TCS.NS (India)"
+            ).upper()
+            # Update session state when user types
+            st.session_state.selected_stock_symbol = stock_symbol
         
         if st.button("🔍 Analyze Stock", type="primary"):
             with st.spinner(f"Analyzing {stock_symbol}..."):
