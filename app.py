@@ -2274,24 +2274,19 @@ with st.sidebar:
     categories = ["Income", "Expense", "Investment"]
     for cat in categories:
         current_budget = budgets.get(cat, 0)
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            budget_amount = st.text_input(f"{cat} Budget", value=str(int(current_budget)), key=f"budget_{cat}")
-        with col2:
-            st.write("")
-            st.write("")
-            if st.button("Set", key=f"set_budget_{cat}"):
-                try:
-                    budget_value = float(budget_amount)
-                    if budget_value != current_budget:
-                        success, error = set_budget(cat, budget_value)
-                        if success:
-                            st.success(f"✓ {cat}")
-                            st.rerun()
-                        else:
-                            st.error(f"Error: {error}")
-                except ValueError:
-                    st.error("Invalid amount")
+        budget_amount = st.text_input(f"{cat} Budget", value=str(int(current_budget)), key=f"budget_{cat}")
+        if st.button(f"💾 Set {cat} Budget", key=f"set_budget_{cat}", use_container_width=True):
+            try:
+                budget_value = float(budget_amount)
+                if budget_value != current_budget:
+                    success, error = set_budget(cat, budget_value)
+                    if success:
+                        st.success(f"✓ {cat} budget updated")
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {error}")
+            except ValueError:
+                st.error("Invalid amount")
 
 # 🪄 Financial Tools Section - Magic of Compounding
 if st.session_state.show_financial_tools:
