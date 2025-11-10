@@ -3,11 +3,11 @@ import json
 from openai import OpenAI
 
 def _get_openai_client():
-    """Lazy initialization of OpenAI client"""
+    """Lazy initialization of OpenAI client using Replit AI integrations"""
     try:
         return OpenAI(
-            api_key=os.environ.get("OPENAI_API_KEY"),
-            base_url="https://api.replit.com/v1/ai-integrations/openai"
+            api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
+            base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
         )
     except Exception as e:
         return None
