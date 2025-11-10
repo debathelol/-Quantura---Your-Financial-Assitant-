@@ -32,11 +32,20 @@ from ui_components.metrics import render_metric_card, render_metric_row, render_
 from ui_components.progress import render_progress_bar, render_donut_chart, render_gauge_chart
 
 def get_db_connection():
-    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+    """Get database connection. Returns None if DATABASE_URL not available."""
+    try:
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            return None
+        return psycopg2.connect(db_url)
+    except Exception:
+        return None
 
 def get_custom_rules():
     try:
         conn = get_db_connection()
+        if conn is None:
+            return []
         cur = conn.cursor()
         cur.execute("SELECT keyword, category FROM custom_rules")
         rules = cur.fetchall()
@@ -50,6 +59,8 @@ def get_custom_rules():
 def add_custom_rule(keyword, category):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM custom_rules WHERE keyword = %s", (keyword,))
         count = cur.fetchone()[0]
@@ -68,6 +79,8 @@ def add_custom_rule(keyword, category):
 def delete_custom_rule(keyword):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("DELETE FROM custom_rules WHERE keyword = %s", (keyword,))
         conn.commit()
@@ -80,6 +93,8 @@ def delete_custom_rule(keyword):
 def get_budgets():
     try:
         conn = get_db_connection()
+        if conn is None:
+            return {}
         cur = conn.cursor()
         cur.execute("SELECT category, budget_amount FROM budgets")
         budgets = dict(cur.fetchall())
@@ -93,6 +108,8 @@ def get_budgets():
 def set_budget(category, amount):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO budgets (category, budget_amount, updated_at) 
@@ -110,6 +127,8 @@ def set_budget(category, amount):
 def get_savings_goals():
     try:
         conn = get_db_connection()
+        if conn is None:
+            return []
         cur = conn.cursor()
         cur.execute("""
             SELECT id, goal_name, target_amount, current_amount, deadline, created_at 
@@ -126,6 +145,8 @@ def get_savings_goals():
 def add_savings_goal(goal_name, target_amount, current_amount, deadline):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO savings_goals (goal_name, target_amount, current_amount, deadline) 
@@ -141,6 +162,8 @@ def add_savings_goal(goal_name, target_amount, current_amount, deadline):
 def update_savings_goal(goal_id, current_amount):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("""
             UPDATE savings_goals SET current_amount = %s WHERE id = %s
@@ -155,6 +178,8 @@ def update_savings_goal(goal_id, current_amount):
 def delete_savings_goal(goal_id):
     try:
         conn = get_db_connection()
+        if conn is None:
+            return False, "Database not available on this platform"
         cur = conn.cursor()
         cur.execute("DELETE FROM savings_goals WHERE id = %s", (goal_id,))
         conn.commit()
