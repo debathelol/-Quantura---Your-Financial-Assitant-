@@ -1,0 +1,16 @@
+streamlit>=1.51.0
+pandas>=2.3.3
+numpy>=2.3.4
+plotly>=6.4.0
+yfinance>=0.2.66
+openai>=2.7.1
+scikit-learn>=1.7.2
+scipy>=1.16.3
+statsmodels>=0.14.5
+arch>=8.0.0
+matplotlib>=3.10.7
+seaborn>=0.13.2
+requests>=2.32.5
+openpyxl>=3.1.5
+reportlab>=4.4.4
+psycopg2-binary>=2.9.11
