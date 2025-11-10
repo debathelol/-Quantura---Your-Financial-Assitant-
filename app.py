@@ -2084,6 +2084,92 @@ st.markdown("""
             grid-template-columns: repeat(3, 1fr);
         }
     }
+    
+    /* Apple-style Frosted Glass Effect for Chat Input */
+    [data-testid="stChatInput"] {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 999 !important;
+        backdrop-filter: blur(40px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2),
+                    0 -4px 16px rgba(99, 102, 241, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        padding: 20px !important;
+        margin: 0 -30px -30px -30px !important;
+    }
+    
+    /* Chat Input Field Styling */
+    [data-testid="stChatInput"] input {
+        background: rgba(255, 255, 255, 0.12) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 16px !important;
+        padding: 14px 20px !important;
+        color: #ffffff !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    [data-testid="stChatInput"] input::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-weight: 400 !important;
+    }
+    
+    [data-testid="stChatInput"] input:hover {
+        background: rgba(255, 255, 255, 0.18) !important;
+        border-color: rgba(255, 255, 255, 0.35) !important;
+        box-shadow: 0 6px 24px rgba(99, 102, 241, 0.25),
+                    0 0 0 4px rgba(99, 102, 241, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    [data-testid="stChatInput"] input:focus {
+        background: rgba(255, 255, 255, 0.22) !important;
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        outline: none !important;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.35),
+                    0 0 0 4px rgba(139, 92, 246, 0.15),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Send Button Styling with Glass Effect */
+    [data-testid="stChatInput"] button {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(99, 102, 241, 0.9)) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 10px 16px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+    
+    [data-testid="stChatInput"] button:hover {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 1), rgba(99, 102, 241, 1)) !important;
+        transform: translateY(-2px) scale(1.05) !important;
+        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5),
+                    0 0 0 4px rgba(139, 92, 246, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+    
+    [data-testid="stChatInput"] button:active {
+        transform: translateY(0) scale(1) !important;
+    }
+    
+    /* Chat Message Container Adjustments for Scrolling */
+    [data-testid="stChatMessageContainer"] {
+        padding-bottom: 120px !important;
+    }
 </style>
 
 <div id="home" class="section-anchor"></div>
