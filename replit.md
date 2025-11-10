@@ -1,6 +1,6 @@
 # Overview
 
-**Quantura** is a comprehensive financial analysis application built with Streamlit and PostgreSQL, offering three major capabilities: (1) Personal Finance Transactions analysis with auto-categorization, budget tracking, and forecasting; (2) Corporate Overview Data with revenue trends and financial ratios; and (3) AI-Powered Quantitative Stock Analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and portfolio optimization. The application aims to be a complete financial management platform for individuals, businesses, and investors with advanced quantitative tools and AI insights.
+**Quantura** is a comprehensive financial analysis application designed for individuals, businesses, and investors. It integrates advanced quantitative tools and AI insights to provide three core functionalities: Personal Finance Transactions analysis (auto-categorization, budgeting, forecasting), Corporate Overview Data (revenue trends, financial ratios), and AI-Powered Quantitative Stock Analysis (Monte Carlo, ARIMA, GARCH, Black-Scholes, portfolio optimization). The project aims to be a complete financial management platform.
 
 # User Preferences
 
@@ -9,199 +9,63 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## UI/UX Decisions
-The application utilizes Streamlit for its frontend, focusing on clarity and user-friendliness with a tabbed interface and a customizable dashboard featuring smooth animations. A sticky navigation bar provides quick access to major sections (Home, Upload Data, Currency, AI Chat, Financial Tools, Analysis, Budget, Savings Goals) with glassmorphism styling and macOS-style hover animations. Visualizations are generated using Matplotlib, Seaborn, and Plotly for high-quality, interactive charts.
-
-### Mobile Responsiveness (November 9, 2025)
-Added comprehensive mobile-first responsive design for smooth experience on all devices:
-
-**Responsive Breakpoints**:
-- **Tablet (≤768px)**: Compact navigation, 3-column feature grid, optimized spacing
-- **Mobile (≤480px)**: 2-column layout, touch-optimized controls, reduced padding
-- **Small Phones (≤360px)**: Further size adjustments for tiny screens
-- **Landscape Mode**: Horizontal layout optimizations
-
-**Touch Optimizations**:
-- **Minimum tap targets**: 44-48px height following iOS/Android guidelines
-- **Touch-friendly inputs**: 48px height, 16px font (prevents iOS auto-zoom)
-- **Tactile feedback**: Scale transform (0.97) on button press for visual response
-- **Tap highlight**: Purple glow effect for better touch visibility
-- **Disabled hover on touch devices**: Clean UX using `@media (hover: none)`
-
-**Performance Enhancements**:
-- Lighter animations on mobile (0.3-0.4s vs 0.6s desktop)
-- Reduced transform distances (-10px vs -30px)
-- Simplified glow effects for better frame rates
-- Optimized transitions (0.2s ease vs complex cubic-bezier)
-
-**Layout Adaptations**:
-- Feature cards: 3 columns (tablet) → 2 columns (mobile)
-- Navigation: Responsive wrapping with smaller fonts
-- Columns: Stack vertically on mobile
-- Sidebar: 85% width, max 300px on small screens
-- Content padding: 1rem mobile vs desktop spacing
-
-**Testing**: Verified on iPhone SE (375x667) and iPad (768x1024) viewports with successful navigation, interaction, and calculator usage.
+The application uses Streamlit for a user-friendly, tabbed interface with a customizable dashboard, smooth animations, and a sticky navigation bar featuring glassmorphism styling and macOS-style hover effects. Visualizations are generated with Matplotlib, Seaborn, and Plotly for high-quality, interactive charts. The UI is designed to be mobile-first and fully responsive across various devices, with touch optimizations and performance enhancements for mobile.
 
 ## Technical Implementations
-The system features intelligent data detection to differentiate between "Personal Finance Transactions" and "Corporate Overview Data" using fuzzy column matching. Pandas is used for ETL, robust date parsing, rule-based auto-categorization, and data validation across CSV and Excel formats. Time series analysis aggregates financial data monthly for trend identification. Scikit-learn's Linear Regression is employed for basic financial forecasting. PostgreSQL, accessed via psycopg2, stores user-defined categorization rules, budget settings, and savings goals, ensuring data persistence. ReportLab generates professional, exportable PDF reports. Multi-currency support is provided for 10 currencies with hardcoded exchange rates. The application includes seven comprehensive financial calculators for compounding, car purchases, salary expenditure planning, retirement planning, debt payoff, investment portfolio analysis, and rent vs. buy comparisons, all featuring real-time calculations, Plotly visualizations, and smart insights. An intelligent AI chatbot (OpenAI GPT-4o-mini via Replit AI Integrations) provides personalized financial guidance, conversational Q&A, data-aware responses, and calculator recommendations, maintaining session-based chat history. Automated financial highlights include expense detection, month-over-month spending alerts, and recurring transaction identification.
+The system intelligently detects and processes financial data from CSV and Excel files using Pandas for ETL, robust date parsing, rule-based auto-categorization, and validation. It performs time series analysis and uses Scikit-learn for basic financial forecasting. PostgreSQL, accessed via psycopg2, stores user settings, categories, budgets, and savings goals. ReportLab generates professional PDF reports. Multi-currency support is available for 10 currencies.
 
-### AI-Powered Global Stock Analyzer (November 10, 2025)
-Implemented a comprehensive quantitative stock analysis system with AI-powered insights supporting **ALL global exchanges**:
+The application includes seven comprehensive financial calculators with real-time calculations and Plotly visualizations. An intelligent AI chatbot, powered by OpenAI GPT-4o-mini via Replit AI Integrations, offers personalized financial guidance, data-aware responses, and session-based chat history. Automated features include expense detection, month-over-month spending alerts, and recurring transaction identification.
 
-**Data Sources**:
-- **Alpha Vantage API**: Primary source for real-time quotes and historical data (requires ALPHA_VANTAGE_API_KEY)
-- **Yahoo Finance**: Fallback data source via yfinance library
-- **Global Market Support**: Stocks, ETFs, and indices from ALL countries including:
-  - **US Markets**: NYSE, NASDAQ (e.g., AAPL, TSLA, MSFT)
-  - **European Markets**: London (.L), Paris (.PA), Frankfurt (.DE), Milan (.MI)
-  - **Asian Markets**: Tokyo (.T), Hong Kong (.HK), Shanghai (.SS), Korea (.KS)
-  - **Emerging Markets**: India NSE (.NS), BSE (.BO), Brazil (.SA), Mexico (.MX)
-  - **Other Markets**: Toronto (.TO), Australia (.AX), and 60+ global exchanges
-- **Ticker Format**: Uses Yahoo Finance suffixes for international stocks (e.g., BP.L for BP London, 7203.T for Toyota Tokyo, RELIANCE.NS for Reliance India)
+A comprehensive AI-powered global stock analysis system supports all global exchanges, automatically converting company names to ticker symbols. It uses Alpha Vantage and Yahoo Finance for data and offers: Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes pricing with Greeks, risk metrics (Sharpe, Beta, Alpha, correlation, Sortino), PCA analysis, and statistical summaries. The AI analysis engine (OpenAI GPT-4o-mini) provides stock ratings, risk assessments, and actionable insights.
 
-**Quantitative Analysis Features**:
-1. **Monte Carlo Simulations**: 1000-path price projections with percentile fan charts (5th, 25th, 50th, 75th, 95th)
-2. **ARIMA Forecasting**: Time series prediction with confidence intervals using statsmodels
-3. **GARCH Volatility**: Volatility clustering and 30-day volatility forecasts using arch library
-4. **Black-Scholes Pricing**: Option pricing with full Greeks (Delta, Gamma, Vega, Theta, Rho)
-5. **Risk Metrics**: Sharpe ratio, Beta, Alpha, correlation, Sortino ratio, volatility analysis
-6. **PCA Analysis**: Principal component analysis for portfolio dimensionality reduction
-7. **Statistical Summary**: Mean, std dev, skewness, kurtosis, percentiles
-
-**AI Analysis Engine** (`services/stock_ai_analyzer.py`):
-- **Stock Ratings**: AI generates Buy/Sell/Hold ratings with confidence scores
-- **Risk Assessment**: Low/Medium/High risk classification
-- **Key Insights**: 3-4 actionable bullet points per stock
-- **Portfolio Insights**: Diversification scoring, correlation analysis, rebalancing suggestions
-- **Model**: OpenAI GPT-4o-mini for intelligent analysis
-
-**User Interface** (4-Tab Layout):
-1. **Single Stock Analysis**: Candlestick charts, Monte Carlo, ARIMA, GARCH, risk metrics, AI ratings
-2. **Portfolio Analysis**: Correlation heatmap, risk-return scatter, PCA, AI portfolio insights
-3. **Options Pricing**: Interactive Black-Scholes calculator with Greeks sensitivity charts
-4. **Advanced Analytics**: Statistical distributions, histogram analysis, custom metrics
-
-**Visualizations** (`ui_components/stock_charts.py`):
-- Candlestick charts with OHLC data
-- Monte Carlo fan charts with probability bands
-- ARIMA forecasts with confidence intervals
-- Correlation heatmaps for multi-stock analysis
-- Risk-return scatter plots with Sharpe-weighted bubbles
-- GARCH volatility trend charts
-- PCA variance explanation charts
-- Greeks sensitivity curves
-
-**Technical Implementation** (`services/stock_analyzer.py`):
-- Object-oriented `StockAnalyzer` class
-- Libraries: scipy (stats, optimization), statsmodels (ARIMA), arch (GARCH), yfinance, sklearn (PCA, regression)
-- Comprehensive error handling for API failures and insufficient data
-- Efficient data caching and returns calculation
-
-### AI Budget Advisor (November 10, 2025)
-Implemented an AI-powered budget recommendation system that analyzes spending patterns and suggests optimal budgets:
-
-**Core Functionality**:
-- **Analysis Engine**: `get_ai_budget_recommendations(df)` function analyzes transaction data including category spending, monthly averages, and date ranges
-- **AI Model**: Uses OpenAI GPT-4o-mini to provide intelligent budget recommendations based on spending patterns
-- **Output Format**: Returns JSON with recommended budgets (Income, Expense, Investment), explanation, and actionable tip
-- **Error Handling**: Comprehensive handling for API failures, rate limits, authentication issues, and JSON parsing errors
-
-**User Interface**:
-- **Location**: Integrated into Budget Settings section in sidebar
-- **Primary Button**: "Get AI Recommendations" (purple primary button) triggers analysis
-- **AI Insights Card**: Purple gradient background displaying AI explanation and recommendations
-- **Metrics Display**: Three metric cards showing recommended budgets for Income, Expense, and Investment
-- **Pro Tip**: Actionable financial advice presented in info box
-- **Apply Button**: One-click application of all AI-recommended budgets
-
-**Data Flow**:
-1. User uploads transaction data via file uploader
-2. Data stored in `st.session_state.processed_df` for cross-component access
-3. AI analyzes spending patterns, current budgets, and monthly averages
-4. Recommendations stored in `st.session_state.ai_budget_recommendations`
-5. User reviews AI insights and can apply with single button click
-6. Budgets saved to PostgreSQL database and success message persists across rerun
-
-**Session State Management**:
-- `processed_df`: Stores uploaded transaction data for AI analysis
-- `primary_type`: Tracks data type (personal_finance or corporate)
-- `ai_budget_recommendations`: Stores AI analysis results
-- `budget_apply_success`: Persists success message across page reruns
-- `show_mc_explanation`, `show_arima_explanation`, `show_garch_explanation`, `show_corr_explanation`, `show_risk_explanation`, `show_pca_explanation`: Control AI graph explanation visibility with toggle support
-- State automatically cleared on upload errors or file removal
-
-### AI Graph Explanations (November 10, 2025)
-Implemented AI-powered graph explanation buttons for complex financial visualizations:
-
-**Core Functionality**:
-- **Function**: `explain_graph_with_ai(graph_type, data_context)` generates simple, jargon-free explanations using GPT-4o-mini
-- **Integration**: Uses Replit AI Integrations via `init_openai_client()` (same pattern as chatbot and budget advisor)
-- **Supported Charts**: Monte Carlo simulations, ARIMA forecasts, GARCH volatility, correlation matrices, risk-return scatter plots, PCA analysis
-
-**User Interface**:
-- **"🤖 Explain this graph" buttons** appear below each major visualization
-- **AI-generated explanations** (~150 words) in blue info boxes focus on actionable insights for non-technical investors
-- **"Hide explanation" toggle** allows dismissing explanations cleanly
-- **Independent states** per chart via session state management
-
-**Prompt Design**:
-- Context-specific prompts for each visualization type
-- Emphasis on "what it means" and "why it matters" for investors
-- Clear limitations and uncertainty acknowledgments where appropriate
-- Everyday language with no financial jargon
-
-**Technical Implementation**:
-- Session state persistence with `st.rerun()` triggers for smooth show/hide
-- Defensive data handling for edge cases (NaN values, missing percentiles)
-- Graceful error handling with user-friendly fallback messages
-- Reuses existing OpenAI infrastructure for consistency
+An AI Budget Advisor analyzes spending patterns to recommend optimal budgets (Income, Expense, Investment), providing explanations and actionable tips, with a one-click application feature. AI-powered "Explain this graph" buttons provide jargon-free, actionable explanations for complex financial visualizations (Monte Carlo, ARIMA, GARCH, correlation, risk-return, PCA) using GPT-4o-mini.
 
 ## Feature Specifications
-- **Personal Finance**: Automatic categorization (Income, Expense, Investment, Uncategorized), custom categorization rules, budget tracking, expense subcategorization, savings goals, multi-currency support, monthly spending trends, income vs. expense comparisons, and CSV/Excel export.
-- **Corporate Analysis**: Revenue trends, income comparisons, employee growth, year-over-year metrics, financial ratios, competitor comparison with interactive charts, and downloadable PDF reports.
-- **Stock Analysis**: Real-time quotes, Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, risk metrics (Sharpe, Beta, Alpha), portfolio correlation analysis, PCA, AI-powered buy/sell ratings, AI graph explanations, and comprehensive visualizations.
-- **General**: Customizable dashboard, chart PNG downloads, date range filtering, multi-file upload, an AI-powered financial assistant, AI budget recommendations, and AI graph explanations for complex visualizations.
+- **Personal Finance**: Auto-categorization, custom rules, budget tracking, subcategorization, savings goals, multi-currency, spending trends, income vs. expense comparisons, CSV/Excel export.
+- **Corporate Analysis**: Revenue trends, income comparisons, employee growth, YOY metrics, financial ratios, competitor analysis, PDF reports.
+- **Stock Analysis**: Real-time quotes, Monte Carlo, ARIMA, GARCH, Black-Scholes, risk metrics, portfolio correlation, PCA, AI buy/sell ratings, AI graph explanations, comprehensive visualizations.
+- **General**: Customizable dashboard, chart PNG downloads, date range filtering, multi-file upload, AI financial assistant, AI budget recommendations, AI graph explanations.
 
 ## System Design Choices
-The architecture adopts a modular approach, separating data ingestion, processing, analysis, and presentation. Streamlit provides a unified Python codebase for frontend and backend. PostgreSQL ensures reliable, ACID-compliant storage for critical user data. A hybrid visualization strategy uses Plotly for interactive elements and Matplotlib/Seaborn for static outputs.
+The architecture is modular, separating data ingestion, processing, analysis, and presentation. Streamlit unifies frontend and backend in Python. PostgreSQL provides reliable data storage. A hybrid visualization approach uses Plotly for interactivity and Matplotlib/Seaborn for static outputs.
 
 # External Dependencies
 
 ## Data Analysis Libraries
-- **Pandas**: Data manipulation and time series.
-- **NumPy**: Numerical operations.
-- **Scikit-learn**: Linear regression for forecasting, PCA for portfolio analysis.
-- **SciPy**: Statistical functions and optimization.
-- **Statsmodels**: ARIMA time series forecasting.
-- **Arch**: GARCH volatility modeling.
-- **yfinance**: Yahoo Finance data fetching.
+- **Pandas**
+- **NumPy**
+- **Scikit-learn**
+- **SciPy**
+- **Statsmodels**
+- **Arch**
+- **yfinance**
 
 ## Visualization Libraries
-- **Matplotlib**: Base plotting.
-- **Seaborn**: Statistical visualizations.
-- **Plotly**: Interactive charting.
+- **Matplotlib**
+- **Seaborn**
+- **Plotly**
 
 ## PDF Generation
-- **ReportLab**: Professional PDF creation.
+- **ReportLab**
 
 ## Web Framework
-- **Streamlit**: Interactive web applications.
+- **Streamlit**
 
 ## Database
-- **PostgreSQL**: Persistent storage.
-- **psycopg2**: Python adapter for PostgreSQL.
+- **PostgreSQL**
+- **psycopg2**
 
 ## Utility Libraries
-- **re**: Regular expressions.
-- **io.BytesIO**: In-memory file handling.
-- **base64**: Encoding for file downloads.
+- **re**
+- **io.BytesIO**
+- **base64**
 
 ## AI Integration
-- **OpenAI GPT-4o-mini**: Via Replit AI Integrations for the chatbot, budget recommendations, stock analysis, and graph explanations.
+- **OpenAI GPT-4o-mini**: Via Replit AI Integrations.
 
 ## Financial APIs
-- **Alpha Vantage**: Real-time stock quotes and historical data (requires ALPHA_VANTAGE_API_KEY).
+- **Alpha Vantage**: For real-time and historical stock data (requires `ALPHA_VANTAGE_API_KEY`).
 
 ## Data Formats Supported
 - CSV files.
-- Excel files (requires `openpyxl`/`xlrd`).
+- Excel files.
