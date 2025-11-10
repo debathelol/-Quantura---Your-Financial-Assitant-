@@ -4005,6 +4005,13 @@ if st.session_state.show_stock_analyzer:
             # Update session state when user types
             st.session_state.selected_stock_symbol = stock_symbol
         
+        # Store analyzer in session state
+        if 'stock_analyzer' not in st.session_state:
+            st.session_state.stock_analyzer = None
+            st.session_state.stock_quote = None
+            st.session_state.stock_metrics = None
+            st.session_state.analyzed_symbol = None
+        
         if st.button("🔍 Analyze Stock", type="primary"):
             with st.spinner(f"Analyzing {stock_symbol}..."):
                 analyzer = StockAnalyzer(stock_symbol)
@@ -4012,147 +4019,161 @@ if st.session_state.show_stock_analyzer:
                 
                 if not success:
                     st.error(f"❌ {error}")
+                    st.session_state.stock_analyzer = None
                 else:
                     st.success(f"✓ Data fetched for {stock_symbol}")
+                    st.session_state.stock_analyzer = analyzer
+                    st.session_state.analyzed_symbol = stock_symbol
                     
-                    quote, quote_error = analyzer.get_quote()
+                    # Get quote and metrics once
+                    quote, _ = analyzer.get_quote()
+                    st.session_state.stock_quote = quote
                     
-                    if quote:
-                        # Enhanced quote metrics with visual hierarchy
-                        render_metric_row([
+                    metrics, _ = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
+                    st.session_state.stock_metrics = metrics
+        
+        # Display analysis if data exists
+        if st.session_state.stock_analyzer is not None:
+            analyzer = st.session_state.stock_analyzer
+            quote = st.session_state.stock_quote
+            metrics = st.session_state.stock_metrics
+            stock_symbol = st.session_state.analyzed_symbol
+            
+            if quote:
+                # Enhanced quote metrics with visual hierarchy
+                render_metric_row([
                             {
                                 "label": "Current Price",
                                 "value": f"${quote['price']:.2f}",
-                                "delta": f"{quote['change_percent']}",
-                                "kind": "goal"
-                            },
-                            {
-                                "label": "Volume",
-                                "value": f"{quote['volume']:,}",
-                                "kind": "analytics"
-                            },
-                            {
-                                "label": "Open",
-                                "value": f"${quote['open']:.2f}",
-                                "kind": "analytics"
-                            },
-                            {
-                                "label": "Day Low",
-                                "value": f"${quote['low']:.2f}",
-                                "kind": "neutral"
-                            },
-                            {
-                                "label": "Day High",
-                                "value": f"${quote['high']:.2f}",
-                                "kind": "neutral"
-                            }
-                        ])
+                "delta": f"{quote['change_percent']}",
+                "kind": "goal"
+            },
+            {
+                "label": "Volume",
+                "value": f"{quote['volume']:,}",
+                "kind": "analytics"
+            },
+            {
+                "label": "Open",
+                "value": f"${quote['open']:.2f}",
+                "kind": "analytics"
+            },
+            {
+                "label": "Day Low",
+                "value": f"${quote['low']:.2f}",
+                "kind": "neutral"
+            },
+            {
+                "label": "Day High",
+                "value": f"${quote['high']:.2f}",
+                "kind": "neutral"
+            }
+                ])
+                
+                st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, stock_symbol)), use_container_width=True)
+                
+                col_left, col_right = st.columns(2)
+                
+                with col_left:
+                    st.markdown("#### 🎲 Monte Carlo Simulation")
+                    mc_days = st.slider("Simulation Days", 30, 730, 252, key="mc_days")
+                    mc_result, mc_error = analyzer.monte_carlo_simulation(days=mc_days, simulations=1000)
                     
-                    st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, stock_symbol)), use_container_width=True)
-                    
-                    col_left, col_right = st.columns(2)
-                    
-                    with col_left:
-                        st.markdown("#### 🎲 Monte Carlo Simulation")
-                        mc_days = st.slider("Simulation Days", 30, 730, 252, key="mc_days")
-                        mc_result, mc_error = analyzer.monte_carlo_simulation(days=mc_days, simulations=1000)
-                        
-                        if mc_result:
-                            render_metric_card(
-                                label="Expected Price",
-                                value=f"${mc_result['expected_final_price']:.2f}",
-                                delta=f"{((mc_result['expected_final_price']/quote['price'])-1)*100:.1f}%",
-                                kind="goal"
-                            )
-                            st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_result, stock_symbol, quote['price'])), use_container_width=True)
-                        else:
-                            st.error(mc_error)
-                    
-                    with col_right:
-                        st.markdown("#### 📊 ARIMA Forecast")
-                        arima_result, arima_error = analyzer.arima_forecast(order=(5,1,0), days=30)
-                        
-                        if arima_result:
-                            render_metric_card(
-                                label="30-Day Forecast",
-                                value=f"${arima_result['forecast'][-1]:.2f}",
-                                delta=f"{((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%",
-                                kind="analytics"
-                            )
-                            st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol)), use_container_width=True)
-                        else:
-                            st.error(arima_error)
-                    
-                    st.markdown("#### 📉 Risk Metrics & Performance")
-                    metrics, metrics_error = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
-                    
-                    if metrics:
-                        render_metric_row([
-                            {
-                                "label": "Sharpe Ratio",
-                                "value": f"{metrics['sharpe_ratio']:.3f}",
-                                "kind": "gain" if metrics['sharpe_ratio'] > 1 else "analytics"
-                            },
-                            {
-                                "label": "Beta (vs SPY)",
-                                "value": f"{metrics['beta']:.3f}",
-                                "kind": "analytics"
-                            },
-                            {
-                                "label": "Alpha",
-                                "value": f"{metrics['alpha']*100:.2f}%",
-                                "kind": "gain" if metrics['alpha'] > 0 else "risk"
-                            },
-                            {
-                                "label": "Volatility",
-                                "value": f"{metrics['volatility']*100:.1f}%",
-                                "kind": "risk"
-                            },
-                            {
-                                "label": "Correlation",
-                                "value": f"{metrics['correlation']:.3f}",
-                                "kind": "analytics"
-                            }
-                        ])
-                    
-                    st.markdown("#### 🌊 GARCH Volatility Forecast")
-                    garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
-                    
-                    if garch_result:
-                        st.plotly_chart(add_plotly_animations(create_volatility_chart(garch_result, stock_symbol)), use_container_width=True)
+                    if mc_result:
+                        render_metric_card(
+                            label="Expected Price",
+                            value=f"${mc_result['expected_final_price']:.2f}",
+                            delta=f"{((mc_result['expected_final_price']/quote['price'])-1)*100:.1f}%",
+                            kind="goal"
+                        )
+                        st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_result, stock_symbol, quote['price'])), use_container_width=True)
                     else:
-                        st.warning(garch_error)
+                        st.error(mc_error)
+                
+                with col_right:
+                    st.markdown("#### 📊 ARIMA Forecast")
+                    arima_result, arima_error = analyzer.arima_forecast(order=(5,1,0), days=30)
                     
-                    st.markdown("#### 🤖 AI Analysis")
-                    if quote and metrics and mc_result and arima_result:
-                        with st.spinner("AI is analyzing..."):
-                            ai_analysis, ai_error = get_ai_stock_analysis(stock_symbol, quote, metrics, mc_result, arima_result)
+                    if arima_result:
+                        render_metric_card(
+                            label="30-Day Forecast",
+                            value=f"${arima_result['forecast'][-1]:.2f}",
+                            delta=f"{((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%",
+                            kind="analytics"
+                        )
+                        st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol)), use_container_width=True)
+                    else:
+                        st.error(arima_error)
+                
+                st.markdown("#### 📉 Risk Metrics & Performance")
+                
+                if metrics:
+                    render_metric_row([
+                        {
+                            "label": "Sharpe Ratio",
+                            "value": f"{metrics['sharpe_ratio']:.3f}",
+                            "kind": "gain" if metrics['sharpe_ratio'] > 1 else "analytics"
+                        },
+                        {
+                            "label": "Beta (vs SPY)",
+                            "value": f"{metrics['beta']:.3f}",
+                            "kind": "analytics"
+                        },
+                        {
+                            "label": "Alpha",
+                            "value": f"{metrics['alpha']*100:.2f}%",
+                            "kind": "gain" if metrics['alpha'] > 0 else "risk"
+                        },
+                        {
+                            "label": "Volatility",
+                            "value": f"{metrics['volatility']*100:.1f}%",
+                            "kind": "risk"
+                        },
+                        {
+                            "label": "Correlation",
+                            "value": f"{metrics['correlation']:.3f}",
+                            "kind": "analytics"
+                        }
+                    ])
+                
+                st.markdown("#### 🌊 GARCH Volatility Forecast")
+                garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
+                
+                if garch_result:
+                    st.plotly_chart(add_plotly_animations(create_volatility_chart(garch_result, stock_symbol)), use_container_width=True)
+                else:
+                    st.warning(garch_error)
+                
+                st.markdown("#### 🤖 AI Analysis")
+                if quote and metrics:
+                    with st.spinner("AI is analyzing..."):
+                        ai_analysis, ai_error = get_ai_stock_analysis(stock_symbol, quote, metrics, mc_result, arima_result)
+                        
+                        if ai_analysis:
+                            rating_colors = {
+                                "Strong Buy": "🟢", "Buy": "🟢", "Hold": "🟡", 
+                                "Sell": "🔴", "Strong Sell": "🔴"
+                            }
+                            rating = ai_analysis.get('rating', 'Hold')
                             
-                            if ai_analysis:
-                                rating_colors = {
-                                    "Strong Buy": "🟢", "Buy": "🟢", "Hold": "🟡", 
-                                    "Sell": "🔴", "Strong Sell": "🔴"
-                                }
-                                rating = ai_analysis.get('rating', 'Hold')
-                                
-                                col_ai1, col_ai2, col_ai3 = st.columns(3)
-                                with col_ai1:
-                                    st.markdown(f"### {rating_colors.get(rating, '🟡')} {rating}")
-                                with col_ai2:
-                                    st.metric("Confidence", f"{ai_analysis.get('confidence', 0)}%")
-                                with col_ai3:
-                                    risk_level = ai_analysis.get('risk_level', 'Medium')
-                                    st.metric("Risk Level", risk_level)
-                                
-                                st.info(ai_analysis.get('analysis', ''))
-                                
-                                st.markdown("**Key Insights:**")
-                                for insight in ai_analysis.get('key_insights', []):
-                                    st.markdown(f"- {insight}")
-                                
-                                st.success(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
-                            else:
-                                st.error(ai_error)
+                            col_ai1, col_ai2, col_ai3 = st.columns(3)
+                            with col_ai1:
+                                st.markdown(f"### {rating_colors.get(rating, '🟡')} {rating}")
+                            with col_ai2:
+                                st.metric("Confidence", f"{ai_analysis.get('confidence', 0)}%")
+                            with col_ai3:
+                                risk_level = ai_analysis.get('risk_level', 'Medium')
+                                st.metric("Risk Level", risk_level)
+                            
+                            st.info(ai_analysis.get('analysis', ''))
+                            
+                            st.markdown("**Key Insights:**")
+                            for insight in ai_analysis.get('key_insights', []):
+                                st.markdown(f"- {insight}")
+                            
+                            st.success(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
+                        else:
+                            st.error(ai_error)
     
     with tab2:
         st.subheader("Portfolio Analysis - Global Diversification")
