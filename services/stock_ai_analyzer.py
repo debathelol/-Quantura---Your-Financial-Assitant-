@@ -52,14 +52,16 @@ Provide a JSON response with:
 6. "recommendation": actionable advice
 """
 
+        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
+        # do not change this unless explicitly requested by the user
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "You are an expert quantitative analyst. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
             ],
             temperature=0.7,
-            max_tokens=800
+            max_completion_tokens=800
         )
         
         content = response.choices[0].message.content.strip()
@@ -104,14 +106,16 @@ Provide JSON response with:
 5. "rebalancing_suggestion": specific allocation percentages
 """
 
+        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
+        # do not change this unless explicitly requested by the user
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "You are a portfolio management expert. Provide analysis in valid JSON format."},
                 {"role": "user", "content": context}
             ],
             temperature=0.7,
-            max_tokens=600
+            max_completion_tokens=600
         )
         
         content = response.choices[0].message.content.strip()
