@@ -20,6 +20,13 @@ from datetime import datetime
 from ui_components.charts import fig_to_png_download
 from openai import OpenAI
 import json
+from services.stock_analyzer import StockAnalyzer
+from services.stock_ai_analyzer import get_ai_stock_analysis, get_ai_portfolio_insights
+from ui_components.stock_charts import (
+    create_candlestick_chart, create_monte_carlo_chart, create_arima_forecast_chart,
+    create_correlation_heatmap, create_risk_return_scatter, create_volatility_chart,
+    create_pca_chart, create_greeks_chart
+)
 
 def get_db_connection():
     return psycopg2.connect(os.environ.get('DATABASE_URL'))
@@ -982,6 +989,8 @@ if 'show_currency_section' not in st.session_state:
     st.session_state.show_currency_section = True
 if 'show_financial_tools' not in st.session_state:
     st.session_state.show_financial_tools = True
+if 'show_stock_analyzer' not in st.session_state:
+    st.session_state.show_stock_analyzer = True
 if 'show_ai_chat' not in st.session_state:
     st.session_state.show_ai_chat = True
 if 'chat_messages' not in st.session_state:
@@ -2140,6 +2149,12 @@ with st.sidebar:
         "🪄 Financial Tools",
         value=st.session_state.show_financial_tools,
         help="Show magic of compounding and other financial calculators"
+    )
+    
+    st.session_state.show_stock_analyzer = st.checkbox(
+        "📈 Stock Analyzer",
+        value=st.session_state.show_stock_analyzer,
+        help="AI-powered quantitative stock analysis with Monte Carlo, ARIMA, GARCH, Black-Scholes"
     )
     
     st.session_state.show_ai_chat = st.checkbox(
@@ -3768,6 +3783,301 @@ if st.session_state.show_financial_tools:
                 st.warning("⚠️ **Short Timeline**: Buying has high upfront costs. Consider renting if you might move soon!")
             elif analysis_years >= 10 and buy_net_position > rent_net_position:
                 st.success(f"🎯 **Long-Term Win**: With {analysis_years}+ years, buying builds significant wealth!")
+    
+    st.markdown("---")
+
+# 📈 Stock Analyzer Section
+if st.session_state.show_stock_analyzer:
+    st.markdown('<div class="section-anchor" id="stocks"></div>', unsafe_allow_html=True)
+    st.header("📈 Quantitative Stock Analyzer")
+    st.markdown("**AI-powered stock analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and risk metrics**")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Single Stock Analysis", "📈 Portfolio Analysis", "⚖️ Options Pricing", "🔬 Advanced Analytics"])
+    
+    with tab1:
+        st.subheader("Individual Stock Analysis")
+        
+        col_input1, col_input2 = st.columns([2, 1])
+        with col_input1:
+            stock_symbol = st.text_input("Stock Symbol (e.g., AAPL, TSLA, MSFT)", value="AAPL", key="stock_symbol").upper()
+        with col_input2:
+            data_source = st.selectbox("Data Source", ["Alpha Vantage (API)", "Yahoo Finance (Fallback)"], key="data_source")
+        
+        if st.button("🔍 Analyze Stock", type="primary"):
+            with st.spinner(f"Analyzing {stock_symbol}..."):
+                analyzer = StockAnalyzer(stock_symbol)
+                
+                if "Alpha Vantage" in data_source:
+                    success, error = analyzer.fetch_data_alpha_vantage(outputsize='full')
+                else:
+                    success, error = analyzer.fetch_data_yfinance(period='2y')
+                
+                if not success:
+                    st.error(f"❌ {error}")
+                else:
+                    st.success(f"✓ Data fetched for {stock_symbol}")
+                    
+                    quote, quote_error = analyzer.get_quote()
+                    
+                    if quote:
+                        col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+                        with col_q1:
+                            st.metric("Current Price", f"${quote['price']:.2f}", f"{quote['change_percent']}")
+                        with col_q2:
+                            st.metric("Volume", f"{quote['volume']:,}")
+                        with col_q3:
+                            st.metric("Open", f"${quote['open']:.2f}")
+                        with col_q4:
+                            st.metric("Day Range", f"${quote['low']:.2f} - ${quote['high']:.2f}")
+                    
+                    st.plotly_chart(create_candlestick_chart(analyzer.data, stock_symbol), use_container_width=True)
+                    
+                    col_left, col_right = st.columns(2)
+                    
+                    with col_left:
+                        st.markdown("#### 🎲 Monte Carlo Simulation")
+                        mc_days = st.slider("Simulation Days", 30, 730, 252, key="mc_days")
+                        mc_result, mc_error = analyzer.monte_carlo_simulation(days=mc_days, simulations=1000)
+                        
+                        if mc_result:
+                            st.metric("Expected Price", f"${mc_result['expected_final_price']:.2f}", 
+                                     f"{((mc_result['expected_final_price']/quote['price'])-1)*100:.1f}%")
+                            st.plotly_chart(create_monte_carlo_chart(mc_result, stock_symbol, quote['price']), use_container_width=True)
+                        else:
+                            st.error(mc_error)
+                    
+                    with col_right:
+                        st.markdown("#### 📊 ARIMA Forecast")
+                        arima_result, arima_error = analyzer.arima_forecast(order=(5,1,0), days=30)
+                        
+                        if arima_result:
+                            st.metric("30-Day Forecast", f"${arima_result['forecast'][-1]:.2f}",
+                                     f"{((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%")
+                            st.plotly_chart(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol), use_container_width=True)
+                        else:
+                            st.error(arima_error)
+                    
+                    st.markdown("#### 📉 Risk Metrics & Performance")
+                    metrics, metrics_error = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
+                    
+                    if metrics:
+                        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+                        with col_m1:
+                            st.metric("Sharpe Ratio", f"{metrics['sharpe_ratio']:.3f}")
+                        with col_m2:
+                            st.metric("Beta (vs SPY)", f"{metrics['beta']:.3f}")
+                        with col_m3:
+                            st.metric("Alpha", f"{metrics['alpha']*100:.2f}%")
+                        with col_m4:
+                            st.metric("Volatility", f"{metrics['volatility']*100:.1f}%")
+                        with col_m5:
+                            st.metric("Correlation", f"{metrics['correlation']:.3f}")
+                    
+                    st.markdown("#### 🌊 GARCH Volatility Forecast")
+                    garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
+                    
+                    if garch_result:
+                        st.plotly_chart(create_volatility_chart(garch_result, stock_symbol), use_container_width=True)
+                    else:
+                        st.warning(garch_error)
+                    
+                    st.markdown("#### 🤖 AI Analysis")
+                    if quote and metrics and mc_result and arima_result:
+                        with st.spinner("AI is analyzing..."):
+                            ai_analysis, ai_error = get_ai_stock_analysis(stock_symbol, quote, metrics, mc_result, arima_result)
+                            
+                            if ai_analysis:
+                                rating_colors = {
+                                    "Strong Buy": "🟢", "Buy": "🟢", "Hold": "🟡", 
+                                    "Sell": "🔴", "Strong Sell": "🔴"
+                                }
+                                rating = ai_analysis.get('rating', 'Hold')
+                                
+                                col_ai1, col_ai2, col_ai3 = st.columns(3)
+                                with col_ai1:
+                                    st.markdown(f"### {rating_colors.get(rating, '🟡')} {rating}")
+                                with col_ai2:
+                                    st.metric("Confidence", f"{ai_analysis.get('confidence', 0)}%")
+                                with col_ai3:
+                                    risk_level = ai_analysis.get('risk_level', 'Medium')
+                                    st.metric("Risk Level", risk_level)
+                                
+                                st.info(ai_analysis.get('analysis', ''))
+                                
+                                st.markdown("**Key Insights:**")
+                                for insight in ai_analysis.get('key_insights', []):
+                                    st.markdown(f"- {insight}")
+                                
+                                st.success(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
+                            else:
+                                st.error(ai_error)
+    
+    with tab2:
+        st.subheader("Portfolio Analysis")
+        st.caption("Analyze multiple stocks for diversification and correlation")
+        
+        portfolio_symbols = st.text_input("Enter stock symbols (comma-separated)", value="AAPL,MSFT,GOOGL,TSLA,AMZN", key="portfolio_symbols")
+        
+        if st.button("📊 Analyze Portfolio", type="primary"):
+            symbols = [s.strip().upper() for s in portfolio_symbols.split(',')]
+            
+            if len(symbols) < 2:
+                st.error("Please enter at least 2 stock symbols")
+            else:
+                with st.spinner("Analyzing portfolio..."):
+                    stocks_data = []
+                    stocks_metrics = []
+                    
+                    progress_bar = st.progress(0)
+                    for i, symbol in enumerate(symbols):
+                        analyzer = StockAnalyzer(symbol)
+                        success, _ = analyzer.fetch_data_yfinance(period='1y')
+                        
+                        if success and analyzer.returns is not None:
+                            metrics, _ = analyzer.calculate_metrics()
+                            if metrics:
+                                stocks_data.append({'symbol': symbol, 'returns': analyzer.returns})
+                                stocks_metrics.append({'symbol': symbol, **metrics})
+                        
+                        progress_bar.progress((i + 1) / len(symbols))
+                    
+                    progress_bar.empty()
+                    
+                    if len(stocks_data) >= 2:
+                        st.success(f"✓ Analyzed {len(stocks_data)} stocks")
+                        
+                        col_port1, col_port2 = st.columns(2)
+                        
+                        with col_port1:
+                            st.markdown("### 🔗 Correlation Matrix")
+                            st.plotly_chart(create_correlation_heatmap(stocks_data), use_container_width=True)
+                        
+                        with col_port2:
+                            st.markdown("### 📊 Risk-Return Scatter")
+                            st.plotly_chart(create_risk_return_scatter(stocks_metrics), use_container_width=True)
+                        
+                        st.markdown("### 🧠 Principal Component Analysis")
+                        pca_result, pca_error = StockAnalyzer('').pca_analysis([s['symbol'] for s in stocks_data])
+                        
+                        if pca_result:
+                            st.plotly_chart(create_pca_chart(pca_result), use_container_width=True)
+                            st.info(f"💡 **Insight:** First {pca_result['n_components']} components explain {pca_result['cumulative_variance'][-1]*100:.1f}% of portfolio variance")
+                        
+                        st.markdown("### 🤖 AI Portfolio Insights")
+                        with st.spinner("Getting AI recommendations..."):
+                            portfolio_insights, port_error = get_ai_portfolio_insights(stocks_metrics)
+                            
+                            if portfolio_insights:
+                                col_ins1, col_ins2 = st.columns(2)
+                                with col_ins1:
+                                    st.metric("Diversification Score", f"{portfolio_insights.get('diversification_score', 0)}/100")
+                                with col_ins2:
+                                    st.metric("Risk Assessment", portfolio_insights.get('risk_assessment', 'N/A'))
+                                
+                                st.markdown("**Recommendations:**")
+                                for rec in portfolio_insights.get('recommendations', []):
+                                    st.markdown(f"- {rec}")
+                                
+                                st.info(f"**Correlation Insight:** {portfolio_insights.get('correlation_insight', '')}")
+                    else:
+                        st.error("Could not fetch data for enough stocks")
+    
+    with tab3:
+        st.subheader("⚖️ Black-Scholes Options Pricing")
+        st.caption("Calculate option prices and Greeks")
+        
+        col_opt1, col_opt2, col_opt3 = st.columns(3)
+        
+        with col_opt1:
+            S = st.number_input("Current Stock Price ($)", min_value=0.01, value=100.0, step=1.0)
+            K = st.number_input("Strike Price ($)", min_value=0.01, value=100.0, step=1.0)
+        
+        with col_opt2:
+            T = st.number_input("Time to Expiration (years)", min_value=0.01, max_value=10.0, value=1.0, step=0.1)
+            r = st.number_input("Risk-Free Rate (%)", min_value=0.0, max_value=20.0, value=4.0, step=0.5) / 100
+        
+        with col_opt3:
+            sigma = st.number_input("Volatility (%)", min_value=0.1, max_value=200.0, value=25.0, step=1.0) / 100
+            option_type = st.selectbox("Option Type", ["call", "put"])
+        
+        if st.button("Calculate Option Price"):
+            analyzer = StockAnalyzer('')
+            greeks, error = analyzer.black_scholes(S, K, T, r, sigma, option_type)
+            
+            if greeks:
+                st.markdown(f"### {option_type.upper()} Option Results")
+                
+                col_g1, col_g2, col_g3, col_g4, col_g5 = st.columns(5)
+                with col_g1:
+                    st.metric("Price", f"${greeks['price']:.2f}")
+                with col_g2:
+                    st.metric("Delta (Δ)", f"{greeks['delta']:.4f}")
+                with col_g3:
+                    st.metric("Gamma (Γ)", f"{greeks['gamma']:.4f}")
+                with col_g4:
+                    st.metric("Vega (ν)", f"{greeks['vega']:.4f}")
+                with col_g5:
+                    st.metric("Theta (Θ)", f"{greeks['theta']:.4f}")
+                
+                st.markdown("#### Greeks Sensitivity Analysis")
+                price_range = np.linspace(S * 0.7, S * 1.3, 50)
+                greeks_data = {'prices': price_range, 'delta': [], 'gamma': [], 'vega': [], 'theta': []}
+                
+                for price in price_range:
+                    g, _ = analyzer.black_scholes(price, K, T, r, sigma, option_type)
+                    if g:
+                        greeks_data['delta'].append(g['delta'])
+                        greeks_data['gamma'].append(g['gamma'])
+                        greeks_data['vega'].append(g['vega'])
+                        greeks_data['theta'].append(g['theta'])
+                
+                st.plotly_chart(create_greeks_chart(greeks_data, option_type), use_container_width=True)
+            else:
+                st.error(error)
+    
+    with tab4:
+        st.subheader("🔬 Advanced Statistical Analysis")
+        
+        adv_symbol = st.text_input("Stock Symbol", value="AAPL", key="adv_symbol").upper()
+        
+        if st.button("Run Analysis"):
+            with st.spinner("Running advanced analytics..."):
+                analyzer = StockAnalyzer(adv_symbol)
+                success, error = analyzer.fetch_data_yfinance(period='2y')
+                
+                if success:
+                    stats, stats_error = analyzer.statistical_summary()
+                    
+                    if stats:
+                        st.markdown("### 📊 Statistical Summary")
+                        
+                        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+                        with col_s1:
+                            st.metric("Mean Return", f"{stats['mean']*100:.3f}%")
+                            st.metric("Median", f"{stats['median']*100:.3f}%")
+                        with col_s2:
+                            st.metric("Std Dev", f"{stats['std']*100:.3f}%")
+                            st.metric("Variance", f"{stats['var']:.6f}")
+                        with col_s3:
+                            st.metric("Skewness", f"{stats['skewness']:.3f}")
+                            st.metric("Kurtosis", f"{stats['kurtosis']:.3f}")
+                        with col_s4:
+                            st.metric("Min Return", f"{stats['min']*100:.2f}%")
+                            st.metric("Max Return", f"{stats['max']*100:.2f}%")
+                        
+                        st.markdown("### 📈 Returns Distribution")
+                        fig = go.Figure()
+                        fig.add_trace(go.Histogram(x=analyzer.returns*100, nbinsx=50, name='Returns', marker_color='cyan'))
+                        fig.update_layout(
+                            title=f'{adv_symbol} Daily Returns Distribution',
+                            xaxis_title='Return (%)',
+                            yaxis_title='Frequency',
+                            template='plotly_dark',
+                            height=400
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.error(error)
     
     st.markdown("---")
 
