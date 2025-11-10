@@ -15,6 +15,8 @@ def get_db_connection():
 def get_custom_rules():
     try:
         conn = get_db_connection()
+        if conn is None:
+            return []
         cur = conn.cursor()
         cur.execute("SELECT keyword, category FROM custom_rules")
         rules = cur.fetchall()
@@ -22,7 +24,6 @@ def get_custom_rules():
         conn.close()
         return rules
     except Exception as e:
-        st.sidebar.error(f"Database error loading rules: {str(e)}")
         return []
 
 def add_custom_rule(keyword, category):
@@ -58,6 +59,8 @@ def delete_custom_rule(keyword):
 def get_budgets():
     try:
         conn = get_db_connection()
+        if conn is None:
+            return {}
         cur = conn.cursor()
         cur.execute("SELECT category, budget_amount FROM budgets")
         budgets = dict(cur.fetchall())
@@ -65,7 +68,6 @@ def get_budgets():
         conn.close()
         return budgets
     except Exception as e:
-        st.sidebar.warning(f"Database error loading budgets: {str(e)}")
         return {}
 
 def set_budget(category, amount):
