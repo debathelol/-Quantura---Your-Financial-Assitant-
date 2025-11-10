@@ -127,13 +127,40 @@ Implemented an AI-powered budget recommendation system that analyzes spending pa
 - `primary_type`: Tracks data type (personal_finance or corporate)
 - `ai_budget_recommendations`: Stores AI analysis results
 - `budget_apply_success`: Persists success message across page reruns
+- `show_mc_explanation`, `show_arima_explanation`, `show_garch_explanation`, `show_corr_explanation`, `show_risk_explanation`, `show_pca_explanation`: Control AI graph explanation visibility with toggle support
 - State automatically cleared on upload errors or file removal
+
+### AI Graph Explanations (November 10, 2025)
+Implemented AI-powered graph explanation buttons for complex financial visualizations:
+
+**Core Functionality**:
+- **Function**: `explain_graph_with_ai(graph_type, data_context)` generates simple, jargon-free explanations using GPT-4o-mini
+- **Integration**: Uses Replit AI Integrations via `init_openai_client()` (same pattern as chatbot and budget advisor)
+- **Supported Charts**: Monte Carlo simulations, ARIMA forecasts, GARCH volatility, correlation matrices, risk-return scatter plots, PCA analysis
+
+**User Interface**:
+- **"🤖 Explain this graph" buttons** appear below each major visualization
+- **AI-generated explanations** (~150 words) in blue info boxes focus on actionable insights for non-technical investors
+- **"Hide explanation" toggle** allows dismissing explanations cleanly
+- **Independent states** per chart via session state management
+
+**Prompt Design**:
+- Context-specific prompts for each visualization type
+- Emphasis on "what it means" and "why it matters" for investors
+- Clear limitations and uncertainty acknowledgments where appropriate
+- Everyday language with no financial jargon
+
+**Technical Implementation**:
+- Session state persistence with `st.rerun()` triggers for smooth show/hide
+- Defensive data handling for edge cases (NaN values, missing percentiles)
+- Graceful error handling with user-friendly fallback messages
+- Reuses existing OpenAI infrastructure for consistency
 
 ## Feature Specifications
 - **Personal Finance**: Automatic categorization (Income, Expense, Investment, Uncategorized), custom categorization rules, budget tracking, expense subcategorization, savings goals, multi-currency support, monthly spending trends, income vs. expense comparisons, and CSV/Excel export.
 - **Corporate Analysis**: Revenue trends, income comparisons, employee growth, year-over-year metrics, financial ratios, competitor comparison with interactive charts, and downloadable PDF reports.
-- **Stock Analysis**: Real-time quotes, Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, risk metrics (Sharpe, Beta, Alpha), portfolio correlation analysis, PCA, AI-powered buy/sell ratings, and comprehensive visualizations.
-- **General**: Customizable dashboard, chart PNG downloads, date range filtering, multi-file upload, an AI-powered financial assistant, and AI budget recommendations.
+- **Stock Analysis**: Real-time quotes, Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, risk metrics (Sharpe, Beta, Alpha), portfolio correlation analysis, PCA, AI-powered buy/sell ratings, AI graph explanations, and comprehensive visualizations.
+- **General**: Customizable dashboard, chart PNG downloads, date range filtering, multi-file upload, an AI-powered financial assistant, AI budget recommendations, and AI graph explanations for complex visualizations.
 
 ## System Design Choices
 The architecture adopts a modular approach, separating data ingestion, processing, analysis, and presentation. Streamlit provides a unified Python codebase for frontend and backend. PostgreSQL ensures reliable, ACID-compliant storage for critical user data. A hybrid visualization strategy uses Plotly for interactive elements and Matplotlib/Seaborn for static outputs.
@@ -170,7 +197,7 @@ The architecture adopts a modular approach, separating data ingestion, processin
 - **base64**: Encoding for file downloads.
 
 ## AI Integration
-- **OpenAI GPT-4o-mini**: Via Replit AI Integrations for the chatbot, budget recommendations, and stock analysis.
+- **OpenAI GPT-4o-mini**: Via Replit AI Integrations for the chatbot, budget recommendations, stock analysis, and graph explanations.
 
 ## Financial APIs
 - **Alpha Vantage**: Real-time stock quotes and historical data (requires ALPHA_VANTAGE_API_KEY).

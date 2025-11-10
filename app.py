@@ -989,6 +989,111 @@ Keep responses under 200 words, friendly, and focused on action."""
         else:
             return f"I encountered an unexpected error. Please try again. If the problem persists, contact support."
 
+def explain_graph_with_ai(graph_type, data_context):
+    """Use AI to explain a graph/visualization to the user in simple terms"""
+    try:
+        client = init_openai_client()
+    except Exception as e:
+        print(f"Error initializing OpenAI client: {str(e)}")
+        return "AI explanation is currently unavailable. Please check your AI integration settings."
+    
+    # Create context-specific prompts based on graph type
+    prompts = {
+        "correlation_matrix": f"""Explain this stock correlation matrix in simple, everyday language:
+
+{data_context}
+
+Focus on:
+- What correlation means for regular people
+- Which stocks move together (high correlation)
+- Which stocks are independent (low correlation)
+- Why this matters for portfolio diversification
+- Actionable insights for the investor
+
+Keep it under 150 words, friendly, and avoid jargon.""",
+
+        "risk_return_scatter": f"""Explain this risk-return scatter plot in simple terms:
+
+{data_context}
+
+Focus on:
+- What the chart shows about each stock's performance
+- Which stocks offer better risk-adjusted returns
+- What the Sharpe ratio tells us
+- Which stocks might be good/bad investments based on this
+- Practical advice for portfolio construction
+
+Keep it under 150 words, conversational, and actionable.""",
+
+        "monte_carlo": f"""Explain this Monte Carlo simulation in everyday language:
+
+{data_context}
+
+Focus on:
+- What this simulation predicts
+- The range of possible outcomes
+- What the confidence intervals mean
+- How reliable these predictions are
+- What the investor should do with this information
+
+Keep it under 150 words, avoid technical jargon, be practical.""",
+
+        "arima_forecast": f"""Explain this ARIMA price forecast simply:
+
+{data_context}
+
+Focus on:
+- What the forecast predicts
+- How confident we can be
+- What factors could change this prediction
+- Whether the investor should act on this
+- Limitations of the forecast
+
+Keep it under 150 words, clear and honest about uncertainty.""",
+
+        "garch_volatility": f"""Explain this volatility forecast in simple terms:
+
+{data_context}
+
+Focus on:
+- What volatility means for regular investors
+- Whether volatility is increasing or decreasing
+- What this means for risk
+- When investors should pay attention to volatility
+- Practical implications
+
+Keep it under 150 words, friendly and actionable.""",
+
+        "portfolio_pca": f"""Explain this PCA analysis simply:
+
+{data_context}
+
+Focus on:
+- What this analysis reveals about the portfolio
+- How the stocks relate to each other
+- Whether the portfolio is well-diversified
+- What adjustments might improve diversification
+- Key takeaways
+
+Keep it under 150 words, avoid technical terms, be practical."""
+    }
+    
+    prompt = prompts.get(graph_type, f"Explain this financial chart in simple terms: {data_context}")
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a friendly financial educator who explains complex charts in simple, everyday language. Avoid jargon and focus on actionable insights."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Unable to generate explanation at the moment. Please try again."
+
 st.set_page_config(page_title="Quantura", layout="wide")
 
 # Dashboard Customization State
@@ -4087,6 +4192,21 @@ if st.session_state.show_stock_analyzer:
                             kind="goal"
                         )
                         st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_result, stock_symbol, quote['price'])), use_container_width=True)
+                        
+                        if st.button("🤖 Explain this graph", key="explain_monte_carlo"):
+                            st.session_state.show_mc_explanation = True
+                            st.rerun()
+                        
+                        if st.session_state.get('show_mc_explanation', False):
+                            with st.spinner("AI is analyzing..."):
+                                p5_value = mc_result['percentiles']['p5'][-1] if 'p5' in mc_result['percentiles'] else 0
+                                p95_value = mc_result['percentiles']['p95'][-1] if 'p95' in mc_result['percentiles'] else 0
+                                context = f"Stock: {stock_symbol}\nCurrent Price: ${quote['price']:.2f}\nExpected Price ({mc_days} days): ${mc_result['expected_final_price']:.2f}\n5th percentile: ${p5_value:.2f}\n95th percentile: ${p95_value:.2f}"
+                                explanation = explain_graph_with_ai("monte_carlo", context)
+                                st.info(f"**AI Explanation:**\n\n{explanation}")
+                                if st.button("Hide explanation", key="hide_mc"):
+                                    st.session_state.show_mc_explanation = False
+                                    st.rerun()
                     else:
                         st.error(mc_error)
                 
@@ -4102,6 +4222,19 @@ if st.session_state.show_stock_analyzer:
                             kind="analytics"
                         )
                         st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol)), use_container_width=True)
+                        
+                        if st.button("🤖 Explain this graph", key="explain_arima"):
+                            st.session_state.show_arima_explanation = True
+                            st.rerun()
+                        
+                        if st.session_state.get('show_arima_explanation', False):
+                            with st.spinner("AI is analyzing..."):
+                                context = f"Stock: {stock_symbol}\nCurrent Price: ${quote['price']:.2f}\n30-Day Forecast: ${arima_result['forecast'][-1]:.2f}\nPredicted Change: {((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%"
+                                explanation = explain_graph_with_ai("arima_forecast", context)
+                                st.info(f"**AI Explanation:**\n\n{explanation}")
+                                if st.button("Hide explanation", key="hide_arima"):
+                                    st.session_state.show_arima_explanation = False
+                                    st.rerun()
                     else:
                         st.error(arima_error)
                 
@@ -4141,6 +4274,19 @@ if st.session_state.show_stock_analyzer:
                 
                 if garch_result:
                     st.plotly_chart(add_plotly_animations(create_volatility_chart(garch_result, stock_symbol)), use_container_width=True)
+                    
+                    if st.button("🤖 Explain this graph", key="explain_garch"):
+                        st.session_state.show_garch_explanation = True
+                        st.rerun()
+                    
+                    if st.session_state.get('show_garch_explanation', False):
+                        with st.spinner("AI is analyzing..."):
+                            context = f"Stock: {stock_symbol}\nCurrent Volatility: {garch_result['current_volatility']:.4f}\n30-Day Forecast Volatility: {garch_result['volatility_forecast'][-1]:.4f}\nTrend: {'Increasing' if garch_result['volatility_forecast'][-1] > garch_result['current_volatility'] else 'Decreasing'}"
+                            explanation = explain_graph_with_ai("garch_volatility", context)
+                            st.info(f"**AI Explanation:**\n\n{explanation}")
+                            if st.button("Hide explanation", key="hide_garch"):
+                                st.session_state.show_garch_explanation = False
+                                st.rerun()
                 else:
                     st.warning(garch_error)
                 
@@ -4221,10 +4367,46 @@ if st.session_state.show_stock_analyzer:
                         with col_port1:
                             st.markdown("### 🔗 Correlation Matrix")
                             st.plotly_chart(create_correlation_heatmap(stocks_data), use_container_width=True)
+                            
+                            if st.button("🤖 Explain this graph", key="explain_correlation"):
+                                st.session_state.show_corr_explanation = True
+                                st.rerun()
+                            
+                            if st.session_state.get('show_corr_explanation', False):
+                                with st.spinner("AI is analyzing..."):
+                                    symbols_str = ", ".join([s['symbol'] for s in stocks_data])
+                                    context = f"Portfolio stocks: {symbols_str}\nNumber of stocks: {len(stocks_data)}"
+                                    explanation = explain_graph_with_ai("correlation_matrix", context)
+                                    st.info(f"**AI Explanation:**\n\n{explanation}")
+                                    if st.button("Hide explanation", key="hide_corr"):
+                                        st.session_state.show_corr_explanation = False
+                                        st.rerun()
                         
                         with col_port2:
                             st.markdown("### 📊 Risk-Return Scatter")
                             st.plotly_chart(create_risk_return_scatter(stocks_metrics), use_container_width=True)
+                            
+                            if st.button("🤖 Explain this graph", key="explain_risk_return"):
+                                st.session_state.show_risk_explanation = True
+                                st.rerun()
+                            
+                            if st.session_state.get('show_risk_explanation', False):
+                                with st.spinner("AI is analyzing..."):
+                                    context_parts = []
+                                    for m in stocks_metrics:
+                                        sharpe = m.get('sharpe_ratio', 0)
+                                        if np.isnan(sharpe):
+                                            sharpe = 0
+                                        context_parts.append(
+                                            f"{m['symbol']}: Return={m['mean_return']*100:.2f}%, "
+                                            f"Risk={m['volatility']*100:.2f}%, Sharpe={sharpe:.2f}"
+                                        )
+                                    context = "\n".join(context_parts)
+                                    explanation = explain_graph_with_ai("risk_return_scatter", context)
+                                    st.info(f"**AI Explanation:**\n\n{explanation}")
+                                    if st.button("Hide explanation", key="hide_risk"):
+                                        st.session_state.show_risk_explanation = False
+                                        st.rerun()
                         
                         st.markdown("### 🧠 Principal Component Analysis")
                         pca_result, pca_error = StockAnalyzer('').pca_analysis([s['symbol'] for s in stocks_data])
@@ -4232,6 +4414,20 @@ if st.session_state.show_stock_analyzer:
                         if pca_result:
                             st.plotly_chart(create_pca_chart(pca_result), use_container_width=True)
                             st.info(f"💡 **Insight:** First {pca_result['n_components']} components explain {pca_result['cumulative_variance'][-1]*100:.1f}% of portfolio variance")
+                            
+                            if st.button("🤖 Explain this graph", key="explain_pca"):
+                                st.session_state.show_pca_explanation = True
+                                st.rerun()
+                            
+                            if st.session_state.get('show_pca_explanation', False):
+                                with st.spinner("AI is analyzing..."):
+                                    symbols_str = ", ".join([s['symbol'] for s in stocks_data])
+                                    context = f"Portfolio: {symbols_str}\nComponents: {pca_result['n_components']}\nVariance explained: {pca_result['cumulative_variance'][-1]*100:.1f}%"
+                                    explanation = explain_graph_with_ai("portfolio_pca", context)
+                                    st.info(f"**AI Explanation:**\n\n{explanation}")
+                                    if st.button("Hide explanation", key="hide_pca"):
+                                        st.session_state.show_pca_explanation = False
+                                        st.rerun()
                         
                         st.markdown("### 🤖 AI Portfolio Insights")
                         with st.spinner("Getting AI recommendations..."):
