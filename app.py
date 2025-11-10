@@ -17,7 +17,7 @@ from sklearn.linear_model import LinearRegression
 import psycopg2
 import os
 from datetime import datetime
-from ui_components.charts import fig_to_png_download
+from ui_components.charts import fig_to_png_download, add_plotly_animations
 from openai import OpenAI
 import json
 from services.stock_analyzer import StockAnalyzer
@@ -924,30 +924,39 @@ def chat_with_ai(user_message, context, chat_history):
         print(f"Error initializing OpenAI client: {str(e)}")
         return "Sorry, I'm having trouble connecting to the AI service. Please check that the AI integration is properly configured and try again."
     
-    system_prompt = f"""You are a helpful financial assistant for Quantura, a personal finance management app.
+    system_prompt = f"""You are a supportive financial coach for Quantura, helping users build wealth and make smart money decisions.
 
-You help users understand their finances, provide budget advice, and guide them to use the app's calculators.
+Your coaching style:
+- Start with empathy and acknowledgment
+- Share 1-2 specific, actionable insights based on their data
+- End with a clear next step or encouraging question
+- Use "you" and "your" to make it personal
+- Be conversational, not robotic
 
-Available Tools in Quantura:
-1. Magic of Compounding Calculator - For investment growth projections
-2. Car Purchase Calculator (20-5-10 Rule) - For car affordability checks
-3. Salary Expenditure Planner - For budget allocation strategies
-4. Retirement Planning Calculator - For retirement readiness analysis
-5. Debt Payoff Planner - For comparing debt reduction strategies
-6. Investment Portfolio Analyzer - For portfolio diversification
-7. Rent vs Buy Calculator - For housing decisions
+Available Tools:
+1. Magic of Compounding - See how investments grow
+2. Car Purchase (20-5-10 Rule) - Smart car buying
+3. Salary Planner - Budget your income wisely
+4. Retirement Calculator - Plan your future
+5. Debt Payoff - Get out of debt faster
+6. Portfolio Analyzer - Diversify investments
+7. Rent vs Buy - Housing decisions
 
-Financial Context:
+Current Financial Data:
 {json.dumps(context, indent=2)}
 
-Guidelines:
-- Be concise and friendly
-- Use simple, everyday language
-- Provide specific insights based on the user's data
-- Recommend relevant calculators when appropriate
-- Focus on practical financial advice
-- Use emojis sparingly for friendliness
-"""
+Response format:
+1. Acknowledge their situation (1 sentence)
+2. Share 2-3 actionable insights as bullet points
+3. Recommend a specific calculator if relevant
+4. End with an encouraging next step
+
+Example: "I see you're spending $2,400/month on expenses. Here's what stands out:
+• Your dining costs are 30% above average - try meal planning to save $200/month
+• You're saving just 5% - bumping this to 15% could add $50K over 10 years
+Want me to run the Compounding Calculator to show you the exact impact of saving more?"
+
+Keep responses under 200 words, friendly, and focused on action."""
     
     messages = [{"role": "system", "content": system_prompt}]
     
@@ -2314,6 +2323,39 @@ with st.sidebar:
                         st.error(f"Error: {error}")
             except ValueError:
                 st.error("Invalid amount")
+    
+    # Feedback Widget
+    st.divider()
+    st.subheader("⭐ Rate Your Experience")
+    st.caption("Help us improve Quantura!")
+    
+    if 'feedback_submitted' not in st.session_state:
+        st.session_state.feedback_submitted = False
+    
+    if not st.session_state.feedback_submitted:
+        rating = st.select_slider(
+            "How would you rate Quantura?",
+            options=["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"],
+            value="⭐⭐⭐⭐",
+            key="rating_slider"
+        )
+        
+        feedback_text = st.text_area(
+            "Any suggestions?",
+            placeholder="Share your thoughts...",
+            key="feedback_text",
+            height=80
+        )
+        
+        if st.button("✅ Submit Feedback", type="primary", use_container_width=True):
+            st.session_state.feedback_submitted = True
+            st.session_state.user_rating = rating
+            st.rerun()
+    else:
+        st.success(f"🙏 Thank you for your {st.session_state.get('user_rating', '⭐⭐⭐⭐')} rating!")
+        if st.button("📝 Submit Another", use_container_width=True):
+            st.session_state.feedback_submitted = False
+            st.rerun()
 
 # 🪄 Financial Tools Section - Magic of Compounding
 if st.session_state.show_financial_tools:
@@ -2469,20 +2511,21 @@ if st.session_state.show_financial_tools:
                 y=1.02,
                 xanchor="right",
                 x=1
-            )
+            ),
+            transition_duration=500
         )
         
-        st.plotly_chart(fig_compound, use_container_width=True)
+        st.plotly_chart(add_plotly_animations(fig_compound), use_container_width=True)
         
-        # Growth Table
-        st.markdown("### 📊 Year-by-Year Breakdown")
-        growth_data = {
-            "Year": years_array[::5] if years > 20 else years_array,  # Show every 5 years if >20
-            "Balance": [f"${balances[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
-            "Invested": [f"${principal_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
-            "Interest": [f"${interest_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))]
-        }
-        st.dataframe(pd.DataFrame(growth_data), use_container_width=True, hide_index=True)
+        # Growth Table - Collapsible
+        with st.expander("📊 View Year-by-Year Breakdown", expanded=False):
+            growth_data = {
+                "Year": years_array[::5] if years > 20 else years_array,  # Show every 5 years if >20
+                "Balance": [f"${balances[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
+                "Invested": [f"${principal_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))],
+                "Interest": [f"${interest_total[i]:,.0f}" for i in (range(0, years+1, 5) if years > 20 else range(years+1))]
+            }
+            st.dataframe(pd.DataFrame(growth_data), use_container_width=True, hide_index=True)
         
         # Wow Factor Insights
         st.markdown("### 💡 Mind-Blowing Insights")
@@ -2556,19 +2599,33 @@ if st.session_state.show_financial_tools:
         else:
             st.error("❌ **NOT RECOMMENDED** - EMI exceeds safe limit for your salary")
         
-        # Display metrics
+        # Display metrics with enhanced visual hierarchy
         st.markdown("### 💰 Loan Breakdown")
-        metric_car1, metric_car2, metric_car3, metric_car4 = st.columns(4)
         
-        with metric_car1:
-            st.metric("💵 Down Payment", f"${down_payment:,.0f}", delta=f"{down_payment_pct}% of price")
-        with metric_car2:
-            st.metric("📊 Loan Amount", f"${loan_amount:,.0f}")
-        with metric_car3:
-            color_delta = "normal" if is_affordable else "inverse"
-            st.metric("💳 Monthly EMI", f"${emi:,.0f}", delta=f"{emi_pct_of_salary:.1f}% of salary", delta_color=color_delta)
-        with metric_car4:
-            st.metric("💸 Total Interest", f"${total_interest:,.0f}")
+        render_metric_row([
+            {
+                "label": "💵 Down Payment",
+                "value": f"${down_payment:,.0f}",
+                "delta": f"{down_payment_pct}% of price",
+                "kind": "analytics"
+            },
+            {
+                "label": "📊 Loan Amount",
+                "value": f"${loan_amount:,.0f}",
+                "kind": "neutral"
+            },
+            {
+                "label": "💳 Monthly EMI",
+                "value": f"${emi:,.0f}",
+                "delta": f"{emi_pct_of_salary:.1f}% of salary",
+                "kind": "risk" if not is_affordable else "gain"
+            },
+            {
+                "label": "💸 Total Interest",
+                "value": f"${total_interest:,.0f}",
+                "kind": "risk"
+            }
+        ])
         
         # Visual EMI vs Salary comparison
         st.markdown("### 📊 EMI vs Your Salary")
@@ -3842,19 +3899,37 @@ if st.session_state.show_stock_analyzer:
                     quote, quote_error = analyzer.get_quote()
                     
                     if quote:
-                        col_q1, col_q2, col_q3, col_q4, col_q5 = st.columns(5)
-                        with col_q1:
-                            st.metric("Current Price", f"${quote['price']:.2f}", f"{quote['change_percent']}")
-                        with col_q2:
-                            st.metric("Volume", f"{quote['volume']:,}")
-                        with col_q3:
-                            st.metric("Open", f"${quote['open']:.2f}")
-                        with col_q4:
-                            st.metric("Day Low", f"${quote['low']:.2f}")
-                        with col_q5:
-                            st.metric("Day High", f"${quote['high']:.2f}")
+                        # Enhanced quote metrics with visual hierarchy
+                        render_metric_row([
+                            {
+                                "label": "Current Price",
+                                "value": f"${quote['price']:.2f}",
+                                "delta": f"{quote['change_percent']}",
+                                "kind": "goal"
+                            },
+                            {
+                                "label": "Volume",
+                                "value": f"{quote['volume']:,}",
+                                "kind": "analytics"
+                            },
+                            {
+                                "label": "Open",
+                                "value": f"${quote['open']:.2f}",
+                                "kind": "analytics"
+                            },
+                            {
+                                "label": "Day Low",
+                                "value": f"${quote['low']:.2f}",
+                                "kind": "neutral"
+                            },
+                            {
+                                "label": "Day High",
+                                "value": f"${quote['high']:.2f}",
+                                "kind": "neutral"
+                            }
+                        ])
                     
-                    st.plotly_chart(create_candlestick_chart(analyzer.data, stock_symbol), use_container_width=True)
+                    st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, stock_symbol)), use_container_width=True)
                     
                     col_left, col_right = st.columns(2)
                     
@@ -3864,9 +3939,13 @@ if st.session_state.show_stock_analyzer:
                         mc_result, mc_error = analyzer.monte_carlo_simulation(days=mc_days, simulations=1000)
                         
                         if mc_result:
-                            st.metric("Expected Price", f"${mc_result['expected_final_price']:.2f}", 
-                                     f"{((mc_result['expected_final_price']/quote['price'])-1)*100:.1f}%")
-                            st.plotly_chart(create_monte_carlo_chart(mc_result, stock_symbol, quote['price']), use_container_width=True)
+                            render_metric_card(
+                                label="Expected Price",
+                                value=f"${mc_result['expected_final_price']:.2f}",
+                                delta=f"{((mc_result['expected_final_price']/quote['price'])-1)*100:.1f}%",
+                                kind="goal"
+                            )
+                            st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_result, stock_symbol, quote['price'])), use_container_width=True)
                         else:
                             st.error(mc_error)
                     
@@ -3875,9 +3954,13 @@ if st.session_state.show_stock_analyzer:
                         arima_result, arima_error = analyzer.arima_forecast(order=(5,1,0), days=30)
                         
                         if arima_result:
-                            st.metric("30-Day Forecast", f"${arima_result['forecast'][-1]:.2f}",
-                                     f"{((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%")
-                            st.plotly_chart(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol), use_container_width=True)
+                            render_metric_card(
+                                label="30-Day Forecast",
+                                value=f"${arima_result['forecast'][-1]:.2f}",
+                                delta=f"{((arima_result['forecast'][-1]/quote['price'])-1)*100:.1f}%",
+                                kind="analytics"
+                            )
+                            st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_result, stock_symbol)), use_container_width=True)
                         else:
                             st.error(arima_error)
                     
@@ -3885,23 +3968,39 @@ if st.session_state.show_stock_analyzer:
                     metrics, metrics_error = analyzer.calculate_metrics(benchmark_symbol='SPY', risk_free_rate=0.04)
                     
                     if metrics:
-                        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-                        with col_m1:
-                            st.metric("Sharpe Ratio", f"{metrics['sharpe_ratio']:.3f}")
-                        with col_m2:
-                            st.metric("Beta (vs SPY)", f"{metrics['beta']:.3f}")
-                        with col_m3:
-                            st.metric("Alpha", f"{metrics['alpha']*100:.2f}%")
-                        with col_m4:
-                            st.metric("Volatility", f"{metrics['volatility']*100:.1f}%")
-                        with col_m5:
-                            st.metric("Correlation", f"{metrics['correlation']:.3f}")
+                        render_metric_row([
+                            {
+                                "label": "Sharpe Ratio",
+                                "value": f"{metrics['sharpe_ratio']:.3f}",
+                                "kind": "gain" if metrics['sharpe_ratio'] > 1 else "analytics"
+                            },
+                            {
+                                "label": "Beta (vs SPY)",
+                                "value": f"{metrics['beta']:.3f}",
+                                "kind": "analytics"
+                            },
+                            {
+                                "label": "Alpha",
+                                "value": f"{metrics['alpha']*100:.2f}%",
+                                "kind": "gain" if metrics['alpha'] > 0 else "risk"
+                            },
+                            {
+                                "label": "Volatility",
+                                "value": f"{metrics['volatility']*100:.1f}%",
+                                "kind": "risk"
+                            },
+                            {
+                                "label": "Correlation",
+                                "value": f"{metrics['correlation']:.3f}",
+                                "kind": "analytics"
+                            }
+                        ])
                     
                     st.markdown("#### 🌊 GARCH Volatility Forecast")
                     garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
                     
                     if garch_result:
-                        st.plotly_chart(create_volatility_chart(garch_result, stock_symbol), use_container_width=True)
+                        st.plotly_chart(add_plotly_animations(create_volatility_chart(garch_result, stock_symbol)), use_container_width=True)
                     else:
                         st.warning(garch_error)
                     
