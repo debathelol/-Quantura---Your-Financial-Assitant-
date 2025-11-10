@@ -2309,7 +2309,7 @@ if st.session_state.show_financial_tools:
     st.markdown('<div class="section-anchor" id="tools"></div>', unsafe_allow_html=True)
     st.header("🪄 Financial Tools")
     
-    with st.expander("💰 Magic of Compounding - Watch Your Money Grow!", expanded=True):
+    with st.expander("💰 Magic of Compounding - Watch Your Money Grow!", expanded=False):
         st.markdown("**Discover the power of compound interest and see your wealth multiply over time!**")
         
         col_input1, col_input2, col_input3 = st.columns(3)
