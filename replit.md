@@ -45,6 +45,38 @@ Added comprehensive mobile-first responsive design for smooth experience on all 
 ## Technical Implementations
 The system features intelligent data detection to differentiate between "Personal Finance Transactions" and "Corporate Overview Data" using fuzzy column matching. Pandas is used for ETL, robust date parsing, rule-based auto-categorization, and data validation across CSV and Excel formats. Time series analysis aggregates financial data monthly for trend identification. Scikit-learn's Linear Regression is employed for basic financial forecasting. PostgreSQL, accessed via psycopg2, stores user-defined categorization rules, budget settings, and savings goals, ensuring data persistence. ReportLab generates professional, exportable PDF reports. Multi-currency support is provided for 10 currencies with hardcoded exchange rates. The application includes seven comprehensive financial calculators for compounding, car purchases, salary expenditure planning, retirement planning, debt payoff, investment portfolio analysis, and rent vs. buy comparisons, all featuring real-time calculations, Plotly visualizations, and smart insights. An intelligent AI chatbot (OpenAI GPT-4o-mini via Replit AI Integrations) provides personalized financial guidance, conversational Q&A, data-aware responses, and calculator recommendations, maintaining session-based chat history. Automated financial highlights include expense detection, month-over-month spending alerts, and recurring transaction identification.
 
+### AI Budget Advisor (November 10, 2025)
+Implemented an AI-powered budget recommendation system that analyzes spending patterns and suggests optimal budgets:
+
+**Core Functionality**:
+- **Analysis Engine**: `get_ai_budget_recommendations(df)` function analyzes transaction data including category spending, monthly averages, and date ranges
+- **AI Model**: Uses OpenAI GPT-4o-mini to provide intelligent budget recommendations based on spending patterns
+- **Output Format**: Returns JSON with recommended budgets (Income, Expense, Investment), explanation, and actionable tip
+- **Error Handling**: Comprehensive handling for API failures, rate limits, authentication issues, and JSON parsing errors
+
+**User Interface**:
+- **Location**: Integrated into Budget Settings section in sidebar
+- **Primary Button**: "Get AI Recommendations" (purple primary button) triggers analysis
+- **AI Insights Card**: Purple gradient background displaying AI explanation and recommendations
+- **Metrics Display**: Three metric cards showing recommended budgets for Income, Expense, and Investment
+- **Pro Tip**: Actionable financial advice presented in info box
+- **Apply Button**: One-click application of all AI-recommended budgets
+
+**Data Flow**:
+1. User uploads transaction data via file uploader
+2. Data stored in `st.session_state.processed_df` for cross-component access
+3. AI analyzes spending patterns, current budgets, and monthly averages
+4. Recommendations stored in `st.session_state.ai_budget_recommendations`
+5. User reviews AI insights and can apply with single button click
+6. Budgets saved to PostgreSQL database and success message persists across rerun
+
+**Session State Management**:
+- `processed_df`: Stores uploaded transaction data for AI analysis
+- `primary_type`: Tracks data type (personal_finance or corporate)
+- `ai_budget_recommendations`: Stores AI analysis results
+- `budget_apply_success`: Persists success message across page reruns
+- State automatically cleared on upload errors or file removal
+
 ## Feature Specifications
 - **Personal Finance**: Automatic categorization (Income, Expense, Investment, Uncategorized), custom categorization rules, budget tracking, expense subcategorization, savings goals, multi-currency support, monthly spending trends, income vs. expense comparisons, and CSV/Excel export.
 - **Corporate Analysis**: Revenue trends, income comparisons, employee growth, year-over-year metrics, financial ratios, competitor comparison with interactive charts, and downloadable PDF reports.

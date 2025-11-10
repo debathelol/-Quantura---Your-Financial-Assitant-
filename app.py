@@ -2201,6 +2201,77 @@ with st.sidebar:
     st.divider()
     st.markdown('<div class="section-anchor" id="budget"></div>', unsafe_allow_html=True)
     st.subheader("💰 Budget Settings")
+    
+    if 'budget_apply_success' in st.session_state:
+        st.success(st.session_state.budget_apply_success)
+        del st.session_state.budget_apply_success
+    
+    st.markdown("#### 🤖 AI Budget Advisor")
+    st.caption("Let AI analyze your spending patterns and suggest optimal budgets")
+    
+    col_ai1, col_ai2 = st.columns([1, 4])
+    with col_ai1:
+        if st.button("✨ Get AI Recommendations", type="primary", use_container_width=True):
+            if 'processed_df' in st.session_state and st.session_state.processed_df is not None:
+                with st.spinner("🧠 AI is analyzing your spending patterns..."):
+                    recommendations, error = get_ai_budget_recommendations(st.session_state.processed_df)
+                    
+                    if error:
+                        st.error(f"❌ {error}")
+                    elif recommendations:
+                        st.session_state.ai_budget_recommendations = recommendations
+                        st.rerun()
+            else:
+                st.warning("📊 Please upload your transaction data first to get AI recommendations")
+    
+    with col_ai2:
+        if 'ai_budget_recommendations' in st.session_state and st.session_state.ai_budget_recommendations:
+            rec = st.session_state.ai_budget_recommendations
+            
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        padding: 15px; border-radius: 10px; color: white; margin-bottom: 10px;">
+                <strong>💡 AI Insight:</strong> {rec.get('explanation', 'No explanation available')}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if 'tip' in rec:
+                st.info(f"💎 **Pro Tip:** {rec['tip']}")
+            
+            if 'budgets' in rec:
+                col_rec1, col_rec2, col_rec3 = st.columns(3)
+                with col_rec1:
+                    st.metric("📥 Income Budget", f"${rec['budgets'].get('Income', 0):,.0f}")
+                with col_rec2:
+                    st.metric("📤 Expense Budget", f"${rec['budgets'].get('Expense', 0):,.0f}")
+                with col_rec3:
+                    st.metric("📈 Investment Budget", f"${rec['budgets'].get('Investment', 0):,.0f}")
+                
+                if st.button("✅ Apply AI Recommendations", key="apply_ai_budgets"):
+                    applied = []
+                    errors = []
+                    for cat, amount in rec['budgets'].items():
+                        success, error = set_budget(cat, amount)
+                        if success:
+                            applied.append(cat)
+                        else:
+                            errors.append(f"{cat}: {error}")
+                    
+                    if applied and errors:
+                        st.session_state.budget_apply_success = f"⚠️ Partially applied budgets for: {', '.join(applied)}. Failed: {', '.join(errors)}"
+                        if 'ai_budget_recommendations' in st.session_state:
+                            del st.session_state.ai_budget_recommendations
+                        st.rerun()
+                    elif applied:
+                        st.session_state.budget_apply_success = f"✓ Applied AI budgets for: {', '.join(applied)}"
+                        if 'ai_budget_recommendations' in st.session_state:
+                            del st.session_state.ai_budget_recommendations
+                        st.rerun()
+                    elif errors:
+                        st.error(f"❌ Failed to apply budgets: {', '.join(errors)}")
+    
+    st.divider()
+    st.markdown("#### ⚙️ Manual Budget Settings")
     budgets = get_budgets()
     
     categories = ["Income", "Expense", "Investment"]
@@ -3757,6 +3828,12 @@ uploaded_files = st.file_uploader("📁 Upload Financial Data (CSV/Excel)", type
 st.markdown('<div class="section-anchor" id="analysis"></div>', unsafe_allow_html=True)
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Analysis", "🥧 Expense Breakdown", "📅 Year-over-Year", "🌸 Seasonal Trends"])
 
+if not uploaded_files:
+    if 'processed_df' in st.session_state:
+        del st.session_state.processed_df
+    if 'primary_type' in st.session_state:
+        del st.session_state.primary_type
+
 if uploaded_files:
     try:
         # Load and detect data types
@@ -3781,22 +3858,34 @@ if uploaded_files:
         if primary_type == 'corporate':
             # Corporate data analysis path
             combined_df = all_dfs[0]  # For now, analyze first corporate file
+            st.session_state.processed_df = combined_df.copy()
+            st.session_state.primary_type = 'corporate'
             st.success(f"✅ Loaded corporate overview data from {uploaded_files[0].name}")
         else:
             # Personal finance analysis path
             finance_dfs = [df for df, dtype in zip(all_dfs, data_types) if dtype == 'personal_finance']
             if finance_dfs:
                 combined_df = pd.concat(finance_dfs, ignore_index=True)
+                st.session_state.processed_df = combined_df.copy()
+                st.session_state.primary_type = 'personal_finance'
                 st.success(f"✅ Loaded {len(combined_df)} rows from {len(finance_dfs)} file(s). {len(combined_df[combined_df['Category'] == 'Uncategorized'])} uncategorized (manual review).")
             else:
                 st.error("No valid personal finance data found.")
                 st.stop()
                 
     except ValueError as ve:
+        if 'processed_df' in st.session_state:
+            del st.session_state.processed_df
+        if 'primary_type' in st.session_state:
+            del st.session_state.primary_type
         st.error(f"❌ {str(ve)}")
         st.info("💡 **Quick Fix:** Make sure your CSV file has these exact column names: **Date**, **Description**, and **Amount**")
         st.stop()
     except Exception as e:
+        if 'processed_df' in st.session_state:
+            del st.session_state.processed_df
+        if 'primary_type' in st.session_state:
+            del st.session_state.primary_type
         st.error(f"❌ Error processing file: {str(e)}")
         st.stop()
     
