@@ -27,6 +27,8 @@ from ui_components.stock_charts import (
     create_correlation_heatmap, create_risk_return_scatter, create_volatility_chart,
     create_pca_chart, create_greeks_chart
 )
+from ui_components.metrics import render_metric_card, render_metric_row, render_highlight_box
+from ui_components.progress import render_progress_bar, render_donut_chart, render_gauge_chart
 
 def get_db_connection():
     return psycopg2.connect(os.environ.get('DATABASE_URL'))
@@ -2251,13 +2253,23 @@ with st.sidebar:
             st.info(f"💎 **Pro Tip:** {rec['tip']}")
         
         if 'budgets' in rec:
-            col_rec1, col_rec2, col_rec3 = st.columns(3)
-            with col_rec1:
-                st.metric("📥 Income Budget", f"${rec['budgets'].get('Income', 0):,.0f}")
-            with col_rec2:
-                st.metric("📤 Expense Budget", f"${rec['budgets'].get('Expense', 0):,.0f}")
-            with col_rec3:
-                st.metric("📈 Investment Budget", f"${rec['budgets'].get('Investment', 0):,.0f}")
+            render_metric_row([
+                {
+                    "label": "📥 Income Budget",
+                    "value": f"${rec['budgets'].get('Income', 0):,.0f}",
+                    "kind": "gain"
+                },
+                {
+                    "label": "📤 Expense Budget",
+                    "value": f"${rec['budgets'].get('Expense', 0):,.0f}",
+                    "kind": "risk"
+                },
+                {
+                    "label": "📈 Investment Budget",
+                    "value": f"${rec['budgets'].get('Investment', 0):,.0f}",
+                    "kind": "goal"
+                }
+            ])
             
             if st.button("✅ Apply AI Recommendations", key="apply_ai_budgets"):
                 applied = []
@@ -2372,25 +2384,43 @@ if st.session_state.show_financial_tools:
         else:
             real_balances = balances
         
-        # Display Key Metrics
+        # Display Key Metrics with Enhanced Visual Hierarchy
         st.markdown("### 🎯 Your Wealth Projection")
-        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
         
         final_balance = balances[-1]
         final_principal = principal_total[-1]
         final_interest = interest_total[-1]
         
-        with metric_col1:
-            st.metric("💰 Final Balance", f"${final_balance:,.0f}")
-        with metric_col2:
-            st.metric("📥 Total Invested", f"${final_principal:,.0f}")
-        with metric_col3:
-            st.metric("✨ Interest Earned", f"${final_interest:,.0f}", delta=f"{(final_interest/final_principal*100):.1f}% return")
-        with metric_col4:
-            # Calculate when money doubles
-            if annual_rate > 0:
-                years_to_double = 72 / annual_rate  # Rule of 72
-                st.metric("⏱️ Money Doubles In", f"{years_to_double:.1f} years")
+        # Calculate when money doubles
+        years_to_double = 72 / annual_rate if annual_rate > 0 else 0
+        
+        metrics_data = [
+            {
+                "label": "💰 Final Balance",
+                "value": f"${final_balance:,.0f}",
+                "kind": "goal"
+            },
+            {
+                "label": "📥 Total Invested",
+                "value": f"${final_principal:,.0f}",
+                "kind": "analytics"
+            },
+            {
+                "label": "✨ Interest Earned",
+                "value": f"${final_interest:,.0f}",
+                "delta": f"{(final_interest/final_principal*100):.1f}% return",
+                "kind": "gain"
+            }
+        ]
+        
+        if years_to_double > 0:
+            metrics_data.append({
+                "label": "⏱️ Money Doubles In",
+                "value": f"{years_to_double:.1f} years",
+                "kind": "analytics"
+            })
+        
+        render_metric_row(metrics_data)
         
         # Create interactive Plotly chart
         fig_compound = go.Figure()
@@ -4692,8 +4722,12 @@ if uploaded_files:
                         goal_col1, goal_col2, goal_col3, goal_col4 = st.columns([2, 1, 1.2, 0.8])
                         
                         with goal_col1:
-                            st.progress(min(progress_pct / 100, 1.0))
-                            st.write(f"${current:,.2f} of ${target:,.2f} ({progress_pct:.1f}%)")
+                            render_progress_bar(
+                                label="",
+                                current=current,
+                                target=target,
+                                kind="goal"
+                            )
                         
                         with goal_col2:
                             if deadline:
