@@ -20,6 +20,14 @@ A comprehensive AI-powered global stock analysis system supports all global exch
 
 An AI Budget Advisor analyzes spending patterns to recommend optimal budgets (Income, Expense, Investment), providing explanations and actionable tips, with a one-click application feature. AI-powered "Explain this graph" buttons provide jargon-free, actionable explanations for complex financial visualizations (Monte Carlo, ARIMA, GARCH, correlation, risk-return, PCA) using GPT-4o-mini.
 
+### Rate Limiting & Caching Strategy
+To prevent Yahoo Finance API rate limiting, the application implements a comprehensive caching system:
+- **Data Caching**: Stock price data and returns are cached for 5 minutes (300 seconds) using Streamlit's `@st.cache_data` decorator
+- **Cache Coverage**: All stock data fetching locations (single stock analysis, portfolio analysis, advanced analytics, batch DCF screener) use cached helpers
+- **Rate Limiting Protection**: Batch stock screener includes 3-second delays between ticker requests, combined with caching to minimize API calls
+- **Performance Benefits**: Analyzing the same stock multiple times within 5 minutes uses cached data (no additional API calls), providing instant results and preventing rate limit errors
+- **Note**: Failed requests are also cached for 5 minutes to prevent repeated failed API calls
+
 ## Feature Specifications
 - **Personal Finance**: Auto-categorization, custom rules, budget tracking, subcategorization, savings goals, multi-currency, spending trends, income vs. expense comparisons, CSV/Excel export.
 - **Corporate Analysis**: Revenue trends, income comparisons, employee growth, YOY metrics, financial ratios, competitor analysis, PDF reports.
