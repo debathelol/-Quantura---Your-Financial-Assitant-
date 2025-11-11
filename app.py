@@ -31,6 +31,36 @@ from ui_components.stock_charts import (
 from ui_components.metrics import render_metric_card, render_metric_row, render_highlight_box
 from ui_components.progress import render_progress_bar, render_donut_chart, render_gauge_chart
 
+# ============================================================================
+# CACHED STOCK DATA FUNCTIONS - Prevents Yahoo Finance Rate Limiting
+# ============================================================================
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_cached_stock_data(ticker, period='2y'):
+    """
+    Fetch and cache stock price history for 5 minutes.
+    Prevents repeated API calls for the same stock.
+    
+    Returns: (success, data_df, returns_series, error_message)
+    """
+    analyzer = StockAnalyzer(ticker)
+    success, error = analyzer.fetch_data_yfinance(period=period)
+    
+    if success and analyzer.data is not None:
+        return True, analyzer.data.copy(), analyzer.returns.copy() if analyzer.returns is not None else None, None
+    return False, None, None, error
+
+@st.cache_data(ttl=300, show_spinner=False)  
+def get_cached_stock_quote(ticker):
+    """Cache stock quote data for 5 minutes"""
+    analyzer = StockAnalyzer(ticker)
+    success, error = analyzer.fetch_data_yfinance(period='5d')
+    
+    if success:
+        quote, quote_error = analyzer.get_quote()
+        return quote, quote_error
+    return None, error
+
 def get_db_connection():
     """Get database connection. Returns None if DATABASE_URL not available."""
     try:
@@ -4169,10 +4199,14 @@ if st.session_state.show_stock_analyzer:
                     
                     with st.spinner(f"Analyzing {company_name}..."):
                         print(f"[DEBUG] Creating StockAnalyzer for {ticker}")
-                        analyzer = StockAnalyzer(ticker)
-                        print(f"[DEBUG] Fetching data from yfinance...")
-                        success, error = analyzer.fetch_data_yfinance(period='2y')
+                        # Use cached data to prevent repeated API calls
+                        success, data_df, returns, error = get_cached_stock_data(ticker, period='2y')
                         print(f"[DEBUG] Fetch result: success={success}, error={error}")
+                        
+                        if success:
+                            analyzer = StockAnalyzer(ticker)
+                            analyzer.data = data_df
+                            analyzer.returns = returns
                         
                         if not success:
                             print(f"[DEBUG] Fetch failed: {error}")
@@ -4581,10 +4615,13 @@ if st.session_state.show_stock_analyzer:
                     
                     progress_bar = st.progress(0)
                     for i, symbol in enumerate(symbols):
-                        analyzer = StockAnalyzer(symbol)
-                        success, _ = analyzer.fetch_data_yfinance(period='1y')
+                        # Use cached data to prevent repeated API calls
+                        success, data_df, returns, error = get_cached_stock_data(symbol, period='1y')
                         
-                        if success and analyzer.returns is not None:
+                        if success and returns is not None:
+                            analyzer = StockAnalyzer(symbol)
+                            analyzer.data = data_df
+                            analyzer.returns = returns
                             metrics, _ = analyzer.calculate_metrics()
                             if metrics:
                                 stocks_data.append({'symbol': symbol, 'returns': analyzer.returns})
@@ -4743,10 +4780,13 @@ if st.session_state.show_stock_analyzer:
         
         if st.button("Run Analysis"):
             with st.spinner("Running advanced analytics..."):
-                analyzer = StockAnalyzer(adv_symbol)
-                success, error = analyzer.fetch_data_yfinance(period='2y')
+                # Use cached data to prevent repeated API calls
+                success, data_df, returns, error = get_cached_stock_data(adv_symbol, period='2y')
                 
                 if success:
+                    analyzer = StockAnalyzer(adv_symbol)
+                    analyzer.data = data_df
+                    analyzer.returns = returns
                     stats, stats_error = analyzer.statistical_summary()
                     
                     if stats:
@@ -4885,10 +4925,14 @@ AMZN""")
                     time.sleep(3)  # 3 second delay between requests to avoid Yahoo Finance rate limits
                 
                 try:
-                    analyzer = StockAnalyzer(ticker)
-                    success, error = analyzer.fetch_data_yfinance(period='1y')
+                    # Use cached data to prevent repeated API calls
+                    success, data_df, returns, error = get_cached_stock_data(ticker, period='1y')
                     
                     if success:
+                        # Create analyzer with cached data
+                        analyzer = StockAnalyzer(ticker)
+                        analyzer.data = data_df
+                        analyzer.returns = returns
                         dcf_result, dcf_error = analyzer.dcf_valuation(
                             growth_rate=batch_growth,
                             terminal_growth=batch_terminal,
