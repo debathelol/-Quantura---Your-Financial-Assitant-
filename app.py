@@ -4493,8 +4493,16 @@ if st.session_state.show_stock_analyzer:
                     st.info("💡 **Tip:** Adjust the assumptions above to run sensitivity analysis and see how different scenarios affect valuation.")
                     
                 elif dcf_error:
-                    st.warning(f"⚠️ DCF Analysis not available: {dcf_error}")
-                    st.info("💡 DCF valuation requires detailed financial statements. Some stocks (especially small-cap, international, or recently IPO'd) may not have sufficient data available.")
+                    # Check if it's a rate limiting error
+                    if "Too Many Requests" in str(dcf_error) or "Rate limited" in str(dcf_error):
+                        st.warning(f"⚠️ DCF Analysis temporarily unavailable: {dcf_error}")
+                        st.info("🕐 **Rate Limit Hit**: Yahoo Finance has blocked too many requests. **Solutions:**\n"
+                               "- Wait 2-3 minutes before trying again\n"
+                               "- Use the **Stock Screener** tab which has built-in delays\n"
+                               "- Analyze fewer stocks at once")
+                    else:
+                        st.warning(f"⚠️ DCF Analysis not available: {dcf_error}")
+                        st.info("💡 DCF valuation requires detailed financial statements. Some stocks (especially small-cap, international, or recently IPO'd) may not have sufficient data available.")
                 
                 st.markdown("#### 🌊 GARCH Volatility Forecast")
                 garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
@@ -4802,6 +4810,10 @@ if st.session_state.show_stock_analyzer:
             
             st.info(f"📋 Will analyze: {', '.join(tickers_to_analyze)}")
             
+            # Rate limiting warning for large lists
+            if len(tickers_to_analyze) > 10:
+                st.warning(f"⏱️ This will analyze {len(tickers_to_analyze)} stocks with 2-second delays (~{len(tickers_to_analyze)*2} seconds total). Consider using a smaller list first.")
+            
         else:  # CSV Upload
             st.markdown("### Upload Stock List (CSV)")
             st.markdown("Upload a CSV file with stock ticker symbols. File should have a column named 'Ticker' or 'Symbol'")
@@ -4857,9 +4869,18 @@ AMZN""")
             progress_bar = st.progress(0)
             status_text = st.empty()
             
+            # Add rate limiting info
+            st.info(f"⏳ Analyzing {len(tickers_to_analyze)} stocks with rate limiting (2-3 seconds per stock to avoid API blocks). This may take a few minutes...")
+            
+            import time
+            
             for idx, ticker in enumerate(tickers_to_analyze):
                 status_text.text(f"Analyzing {ticker}... ({idx+1}/{len(tickers_to_analyze)})")
                 progress_bar.progress((idx + 1) / len(tickers_to_analyze))
+                
+                # Add delay to avoid rate limiting (except for first request)
+                if idx > 0:
+                    time.sleep(2)  # 2 second delay between requests
                 
                 try:
                     analyzer = StockAnalyzer(ticker)
