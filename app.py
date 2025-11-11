@@ -4812,7 +4812,9 @@ if st.session_state.show_stock_analyzer:
             
             # Rate limiting warning for large lists
             if len(tickers_to_analyze) > 10:
-                st.warning(f"⏱️ This will analyze {len(tickers_to_analyze)} stocks with 2-second delays (~{len(tickers_to_analyze)*2} seconds total). Consider using a smaller list first.")
+                est_time_min = (len(tickers_to_analyze)*3) // 60
+                est_time_sec = (len(tickers_to_analyze)*3) % 60
+                st.warning(f"⏱️ This will analyze {len(tickers_to_analyze)} stocks with 3-second delays (~{est_time_min} min {est_time_sec} sec total). Consider using a smaller list for faster results.")
             
         else:  # CSV Upload
             st.markdown("### Upload Stock List (CSV)")
@@ -4870,7 +4872,7 @@ AMZN""")
             status_text = st.empty()
             
             # Add rate limiting info
-            st.info(f"⏳ Analyzing {len(tickers_to_analyze)} stocks with rate limiting (2-3 seconds per stock to avoid API blocks). This may take a few minutes...")
+            st.info(f"⏳ Analyzing {len(tickers_to_analyze)} stocks with 3-second delays to avoid Yahoo Finance rate limits. Estimated time: ~{len(tickers_to_analyze)*3//60} min {len(tickers_to_analyze)*3%60} sec")
             
             import time
             
@@ -4880,7 +4882,7 @@ AMZN""")
                 
                 # Add delay to avoid rate limiting (except for first request)
                 if idx > 0:
-                    time.sleep(2)  # 2 second delay between requests
+                    time.sleep(3)  # 3 second delay between requests to avoid Yahoo Finance rate limits
                 
                 try:
                     analyzer = StockAnalyzer(ticker)
