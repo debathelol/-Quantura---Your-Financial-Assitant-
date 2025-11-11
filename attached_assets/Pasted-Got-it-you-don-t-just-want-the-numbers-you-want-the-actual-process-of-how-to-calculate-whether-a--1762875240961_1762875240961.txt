@@ -1,0 +1,101 @@
+Got it — you don’t just want the numbers; you want the actual process of how to calculate whether a stock is overvalued, step by step, like you’d do it from scratch.
+Here’s how pros do it — math, logic, and sequence included 👇
+
+⸻
+
+🧠 The Full Process: How to Calculate if a Stock Is Overvalued
+
+⸻
+
+Step 1: Gather Core Data
+
+You need 3 things from the company’s financials (from their annual report or Yahoo Finance):
+	1.	Free Cash Flow (FCF) – cash left after operating + capital expenses.
+→ From the cash flow statement.
+	2.	Growth estimates – expected % increase in FCF per year (based on history or analyst forecasts).
+	3.	Discount rate (r) – usually the Weighted Average Cost of Capital (WACC).
+
+⸻
+
+Step 2: Project Future Free Cash Flows
+
+Predict how much FCF the company will make each year for the next 5–10 years.
+Use:
+FCF_t = FCF_{t-1} \times (1 + g)
+where
+	•	FCF_t = FCF in year t
+	•	g = expected annual growth rate
+
+Example:
+If current FCF = ₹100 crore and g = 8%
+FCF_1 = 100 × 1.08 = 108
+FCF_2 = 108 × 1.08 = 116.6
+…and so on.
+
+⸻
+
+Step 3: Discount Each FCF to Present Value
+
+Because ₹100 today ≠ ₹100 next year, you “discount” future cash to today’s value:
+PV(FCF_t) = \frac{FCF_t}{(1 + r)^t}
+
+You’ll do this for each year’s FCF.
+
+⸻
+
+Step 4: Estimate the Terminal Value
+
+After your forecast period (say, 5 years), assume the company grows forever at a slow, stable rate g_t (e.g., 2–3%).
+
+TV = \frac{FCF_n × (1 + g_t)}{r - g_t}
+
+This gives the company’s value after year 5 (the “terminal value”).
+
+Then discount it too:
+PV(TV) = \frac{TV}{(1 + r)^n}
+
+⸻
+
+Step 5: Add It All Up
+
+Now you sum all the present values:
+\text{Enterprise Value (EV)} = \sum PV(FCF_t) + PV(TV)
+
+That’s the total value of the company’s operations.
+
+⸻
+
+Step 6: Adjust for Debt & Cash
+
+You want equity value (what shareholders own), not enterprise value.
+
+\text{Equity Value} = EV - \text{Total Debt} + \text{Cash}
+
+⸻
+
+Step 7: Divide by Shares Outstanding
+
+Finally, get the Intrinsic Value per Share:
+\text{Intrinsic Value} = \frac{\text{Equity Value}}{\text{Number of Shares}}
+
+⸻
+
+Step 8: Compare With Market Price
+
+Now compare intrinsic value vs current stock price:
+	•	If Market Price > Intrinsic Value → Overvalued
+	•	If Market Price < Intrinsic Value → Undervalued
+
+The % difference shows how much:
+\% \text{Overvaluation} = \frac{P_{market} - P_{intrinsic}}{P_{intrinsic}} × 100
+
+⸻
+
+✅ Optional Accuracy Boosts
+	•	Use multiple models (DCF, P/E, PEG, P/B) and average them.
+	•	Test different assumptions (growth, discount rate) — that’s a sensitivity analysis.
+	•	Compare your numbers with analyst estimates to see if you’re realistic.
+
+⸻
+
+Would you like me to demonstrate this full process using a real stock (like HDFC Bank, Reliance, or Tesla), with real figures plugged into each formula? That’ll show you how it all connects.
