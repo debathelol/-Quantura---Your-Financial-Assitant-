@@ -11,6 +11,8 @@ from arch import arch_model
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 import json
+import warnings
+warnings.filterwarnings('ignore')
 
 ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', '')
 
@@ -326,3 +328,171 @@ class StockAnalyzer:
             }, None
         except Exception as e:
             return None, str(e)
+    
+    def dcf_valuation(self, growth_rate=0.08, terminal_growth=0.03, discount_rate=0.10, years=5):
+        """
+        Calculate Discounted Cash Flow (DCF) valuation to determine if stock is overvalued.
+        
+        Parameters:
+        - growth_rate: Expected annual FCF growth rate (default 8%)
+        - terminal_growth: Perpetual growth rate after forecast period (default 3%)
+        - discount_rate: WACC or required rate of return (default 10%)
+        - years: Forecast period in years (default 5)
+        
+        Returns: Dictionary with full DCF analysis including step-by-step calculations
+        """
+        try:
+            ticker = yf.Ticker(self.symbol)
+            
+            # Get financial data
+            cash_flow = ticker.cashflow
+            balance_sheet = ticker.balance_sheet
+            info = ticker.info
+            
+            if cash_flow.empty or balance_sheet.empty:
+                return None, "Insufficient financial data available for DCF analysis"
+            
+            # Step 1: Get Free Cash Flow (FCF)
+            try:
+                if 'Free Cash Flow' in cash_flow.index:
+                    fcf_current = float(cash_flow.loc['Free Cash Flow'].iloc[0])
+                else:
+                    operating_cf = float(cash_flow.loc['Operating Cash Flow'].iloc[0]) if 'Operating Cash Flow' in cash_flow.index else 0
+                    capex = float(cash_flow.loc['Capital Expenditure'].iloc[0]) if 'Capital Expenditure' in cash_flow.index else 0
+                    fcf_current = operating_cf + capex  # capex is negative
+            except:
+                return None, "Could not extract Free Cash Flow from financial statements"
+            
+            if fcf_current <= 0:
+                return None, f"Negative or zero Free Cash Flow (${fcf_current/1e9:.2f}B). DCF not applicable."
+            
+            # Step 2 & 3: Project and Discount Future FCFs
+            projected_fcfs = []
+            discounted_fcfs = []
+            
+            for year in range(1, years + 1):
+                # Project FCF
+                fcf_projected = fcf_current * ((1 + growth_rate) ** year)
+                projected_fcfs.append(fcf_projected)
+                
+                # Discount to present value
+                pv_fcf = fcf_projected / ((1 + discount_rate) ** year)
+                discounted_fcfs.append(pv_fcf)
+            
+            # Step 4: Calculate Terminal Value
+            fcf_terminal_year = projected_fcfs[-1] * (1 + terminal_growth)
+            terminal_value = fcf_terminal_year / (discount_rate - terminal_growth)
+            pv_terminal_value = terminal_value / ((1 + discount_rate) ** years)
+            
+            # Step 5: Sum all present values = Enterprise Value
+            enterprise_value = sum(discounted_fcfs) + pv_terminal_value
+            
+            # Step 6: Adjust for debt and cash to get Equity Value
+            try:
+                total_debt = float(balance_sheet.loc['Total Debt'].iloc[0]) if 'Total Debt' in balance_sheet.index else 0
+            except:
+                total_debt = 0
+            
+            try:
+                cash = float(balance_sheet.loc['Cash'].iloc[0]) if 'Cash' in balance_sheet.index else 0
+            except:
+                try:
+                    cash = float(balance_sheet.loc['Cash And Cash Equivalents'].iloc[0])
+                except:
+                    cash = 0
+            
+            equity_value = enterprise_value - total_debt + cash
+            
+            # Step 7: Calculate Intrinsic Value per Share
+            shares_outstanding = info.get('sharesOutstanding', 0)
+            if shares_outstanding == 0:
+                return None, "Could not determine shares outstanding"
+            
+            intrinsic_value_per_share = equity_value / shares_outstanding
+            
+            # Step 8: Compare with Market Price
+            current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+            if current_price == 0:
+                if self.data is not None and not self.data.empty:
+                    current_price = float(self.data['close'].iloc[-1])
+            
+            if current_price == 0:
+                return None, "Could not determine current market price"
+            
+            # Calculate valuation metrics
+            overvaluation_pct = ((current_price - intrinsic_value_per_share) / intrinsic_value_per_share) * 100
+            
+            if overvaluation_pct > 0:
+                valuation_status = "OVERVALUED"
+                recommendation = "Stock is trading above its intrinsic value. Consider waiting for a better entry price."
+            elif overvaluation_pct < -10:
+                valuation_status = "UNDERVALUED"
+                recommendation = "Stock is trading below its intrinsic value. Potential buying opportunity."
+            else:
+                valuation_status = "FAIRLY VALUED"
+                recommendation = "Stock is trading close to its intrinsic value."
+            
+            # Prepare detailed results
+            result = {
+                # Input assumptions
+                'assumptions': {
+                    'growth_rate': growth_rate * 100,
+                    'terminal_growth': terminal_growth * 100,
+                    'discount_rate': discount_rate * 100,
+                    'forecast_years': years
+                },
+                
+                # Step 1: Current FCF
+                'fcf_current': fcf_current,
+                'fcf_current_billions': fcf_current / 1e9,
+                
+                # Step 2: Projected FCFs
+                'projected_fcfs': projected_fcfs,
+                'projected_fcfs_billions': [fcf / 1e9 for fcf in projected_fcfs],
+                
+                # Step 3: Discounted FCFs
+                'discounted_fcfs': discounted_fcfs,
+                'discounted_fcfs_billions': [fcf / 1e9 for fcf in discounted_fcfs],
+                'sum_discounted_fcfs': sum(discounted_fcfs),
+                'sum_discounted_fcfs_billions': sum(discounted_fcfs) / 1e9,
+                
+                # Step 4: Terminal Value
+                'terminal_value': terminal_value,
+                'terminal_value_billions': terminal_value / 1e9,
+                'pv_terminal_value': pv_terminal_value,
+                'pv_terminal_value_billions': pv_terminal_value / 1e9,
+                
+                # Step 5: Enterprise Value
+                'enterprise_value': enterprise_value,
+                'enterprise_value_billions': enterprise_value / 1e9,
+                
+                # Step 6: Debt and Cash adjustments
+                'total_debt': total_debt,
+                'total_debt_billions': total_debt / 1e9,
+                'cash': cash,
+                'cash_billions': cash / 1e9,
+                'equity_value': equity_value,
+                'equity_value_billions': equity_value / 1e9,
+                
+                # Step 7: Intrinsic Value per Share
+                'shares_outstanding': shares_outstanding,
+                'shares_outstanding_millions': shares_outstanding / 1e6,
+                'intrinsic_value_per_share': intrinsic_value_per_share,
+                
+                # Step 8: Market Comparison
+                'current_market_price': current_price,
+                'overvaluation_pct': overvaluation_pct,
+                'price_difference': current_price - intrinsic_value_per_share,
+                'valuation_status': valuation_status,
+                'recommendation': recommendation,
+                
+                # Additional metrics
+                'margin_of_safety': -overvaluation_pct if overvaluation_pct < 0 else 0,
+                'upside_potential': -overvaluation_pct if overvaluation_pct < 0 else 0,
+                'downside_risk': overvaluation_pct if overvaluation_pct > 0 else 0
+            }
+            
+            return result, None
+            
+        except Exception as e:
+            return None, f"DCF calculation error: {str(e)}"
