@@ -4994,10 +4994,11 @@ AMZN""")
                     
                     # Download results
                     csv = display_df.to_csv(index=False)
+                    from datetime import datetime as dt
                     st.download_button(
                         label="📥 Download Results as CSV",
                         data=csv,
-                        file_name=f"dcf_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        file_name=f"dcf_analysis_{dt.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv"
                     )
                     
