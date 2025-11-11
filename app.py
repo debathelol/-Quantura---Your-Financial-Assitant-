@@ -4096,7 +4096,7 @@ if st.session_state.show_stock_analyzer:
     st.header("📈 Global Quantitative Stock Analyzer")
     st.markdown("**🌍 Analyze stocks from ANY country!** AI-powered analysis with Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes options pricing, and risk metrics for US, European, Asian, and emerging markets.")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Single Stock Analysis", "📈 Portfolio Analysis", "⚖️ Options Pricing", "🔬 Advanced Analytics"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Single Stock Analysis", "📈 Portfolio Analysis", "⚖️ Options Pricing", "🔬 Advanced Analytics", "🔍 Stock Screener & Batch DCF"])
     
     with tab1:
         st.subheader("Individual Stock Analysis - Global Markets")
@@ -4771,6 +4771,254 @@ if st.session_state.show_stock_analyzer:
                         st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.error(error)
+    
+    with tab5:
+        st.subheader("🔍 Stock Screener & Batch DCF Valuation")
+        st.markdown("Analyze multiple stocks at once using DCF valuation to find overvalued and undervalued opportunities.")
+        
+        # Two options: Predefined lists or CSV upload
+        screener_option = st.radio(
+            "Choose Analysis Method:",
+            ["📊 Popular Stocks Screener", "📤 Upload Custom CSV"],
+            horizontal=True
+        )
+        
+        if screener_option == "📊 Popular Stocks Screener":
+            st.markdown("### Select Stock List to Analyze")
+            
+            # Predefined stock lists
+            stock_lists = {
+                "Tech Giants (FAANG+)": ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA"],
+                "Dow Jones Top 10": ["UNH", "MSFT", "GS", "HD", "CAT", "AMGN", "V", "MCD", "CRM", "BA"],
+                "S&P 500 Top 20": ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "BRK-B", "TSLA", "LLY", "V", 
+                                  "UNH", "XOM", "JPM", "WMT", "JNJ", "MA", "PG", "AVGO", "HD", "ORCL"],
+                "Value Stocks": ["BRK-B", "JNJ", "JPM", "V", "WMT", "PG", "KO", "PEP", "COST", "HD"],
+                "High Growth": ["NVDA", "TSLA", "META", "NFLX", "AMD", "CRM", "SHOP", "SQ", "ROKU", "SNAP"],
+                "Dividend Aristocrats": ["JNJ", "KO", "PG", "PEP", "WMT", "MCD", "MMM", "CAT", "CVX", "XOM"]
+            }
+            
+            selected_list = st.selectbox("Stock List:", list(stock_lists.keys()))
+            tickers_to_analyze = stock_lists[selected_list]
+            
+            st.info(f"📋 Will analyze: {', '.join(tickers_to_analyze)}")
+            
+        else:  # CSV Upload
+            st.markdown("### Upload Stock List (CSV)")
+            st.markdown("Upload a CSV file with stock ticker symbols. File should have a column named 'Ticker' or 'Symbol'")
+            
+            # Example CSV
+            with st.expander("📄 Example CSV Format"):
+                st.code("""Ticker
+AAPL
+MSFT
+GOOGL
+TSLA
+AMZN""")
+            
+            uploaded_csv = st.file_uploader("Upload CSV file", type=['csv'])
+            
+            if uploaded_csv:
+                try:
+                    df_tickers = pd.read_csv(uploaded_csv)
+                    
+                    # Try to find ticker column
+                    ticker_col = None
+                    for col in df_tickers.columns:
+                        if col.lower() in ['ticker', 'symbol', 'stock']:
+                            ticker_col = col
+                            break
+                    
+                    if ticker_col:
+                        tickers_to_analyze = df_tickers[ticker_col].str.upper().tolist()
+                        st.success(f"✅ Loaded {len(tickers_to_analyze)} tickers from CSV")
+                        st.info(f"📋 Tickers: {', '.join(tickers_to_analyze[:10])}{' ...' if len(tickers_to_analyze) > 10 else ''}")
+                    else:
+                        st.error("❌ CSV must have a column named 'Ticker', 'Symbol', or 'Stock'")
+                        tickers_to_analyze = []
+                except Exception as e:
+                    st.error(f"Error reading CSV: {str(e)}")
+                    tickers_to_analyze = []
+            else:
+                tickers_to_analyze = []
+        
+        # DCF Parameters
+        with st.expander("⚙️ DCF Assumptions (applies to all stocks)", expanded=False):
+            col_batch1, col_batch2, col_batch3 = st.columns(3)
+            with col_batch1:
+                batch_growth = st.slider("FCF Growth Rate (%)", 0, 30, 8, key="batch_growth") / 100
+            with col_batch2:
+                batch_terminal = st.slider("Terminal Growth (%)", 0, 5, 3, key="batch_terminal") / 100
+            with col_batch3:
+                batch_discount = st.slider("Discount Rate (%)", 5, 20, 10, key="batch_discount") / 100
+        
+        # Run Analysis Button
+        if st.button("🚀 Run DCF Analysis", type="primary", disabled=len(tickers_to_analyze) == 0):
+            results = []
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for idx, ticker in enumerate(tickers_to_analyze):
+                status_text.text(f"Analyzing {ticker}... ({idx+1}/{len(tickers_to_analyze)})")
+                progress_bar.progress((idx + 1) / len(tickers_to_analyze))
+                
+                try:
+                    analyzer = StockAnalyzer(ticker)
+                    success, error = analyzer.fetch_data_yfinance(period='1y')
+                    
+                    if success:
+                        dcf_result, dcf_error = analyzer.dcf_valuation(
+                            growth_rate=batch_growth,
+                            terminal_growth=batch_terminal,
+                            discount_rate=batch_discount,
+                            years=5
+                        )
+                        
+                        if dcf_result:
+                            results.append({
+                                'Ticker': ticker,
+                                'Current Price': dcf_result['current_market_price'],
+                                'Intrinsic Value': dcf_result['intrinsic_value_per_share'],
+                                'Difference': dcf_result['price_difference'],
+                                'Over/Under %': dcf_result['overvaluation_pct'],
+                                'Status': dcf_result['valuation_status'],
+                                'Margin of Safety': dcf_result['margin_of_safety'],
+                                'Downside Risk': dcf_result['downside_risk']
+                            })
+                        else:
+                            results.append({
+                                'Ticker': ticker,
+                                'Current Price': None,
+                                'Intrinsic Value': None,
+                                'Difference': None,
+                                'Over/Under %': None,
+                                'Status': f"Error: {dcf_error}",
+                                'Margin of Safety': None,
+                                'Downside Risk': None
+                            })
+                    else:
+                        results.append({
+                            'Ticker': ticker,
+                            'Current Price': None,
+                            'Intrinsic Value': None,
+                            'Difference': None,
+                            'Over/Under %': None,
+                            'Status': f"Data Error: {error}",
+                            'Margin of Safety': None,
+                            'Downside Risk': None
+                        })
+                except Exception as e:
+                    results.append({
+                        'Ticker': ticker,
+                        'Current Price': None,
+                        'Intrinsic Value': None,
+                        'Difference': None,
+                        'Over/Under %': None,
+                        'Status': f"Error: {str(e)}",
+                        'Margin of Safety': None,
+                        'Downside Risk': None
+                    })
+            
+            status_text.text("✅ Analysis Complete!")
+            progress_bar.empty()
+            
+            # Display Results
+            if results:
+                df_results = pd.DataFrame(results)
+                
+                # Summary metrics
+                valid_results = df_results[df_results['Status'].isin(['OVERVALUED', 'UNDERVALUED', 'FAIRLY VALUED'])]
+                
+                if len(valid_results) > 0:
+                    col_sum1, col_sum2, col_sum3, col_sum4 = st.columns(4)
+                    
+                    with col_sum1:
+                        st.metric("✅ Analyzed Successfully", len(valid_results))
+                    with col_sum2:
+                        undervalued = len(valid_results[valid_results['Status'] == 'UNDERVALUED'])
+                        st.metric("📉 Undervalued", undervalued, delta="Buying Opportunity")
+                    with col_sum3:
+                        overvalued = len(valid_results[valid_results['Status'] == 'OVERVALUED'])
+                        st.metric("📈 Overvalued", overvalued, delta="Caution")
+                    with col_sum4:
+                        fair = len(valid_results[valid_results['Status'] == 'FAIRLY VALUED'])
+                        st.metric("⚖️ Fairly Valued", fair)
+                    
+                    st.markdown("---")
+                    
+                    # Filter options
+                    filter_option = st.selectbox("Filter Results:", ["All", "Undervalued Only", "Overvalued Only", "Fairly Valued Only"])
+                    
+                    if filter_option == "Undervalued Only":
+                        display_df = valid_results[valid_results['Status'] == 'UNDERVALUED']
+                    elif filter_option == "Overvalued Only":
+                        display_df = valid_results[valid_results['Status'] == 'OVERVALUED']
+                    elif filter_option == "Fairly Valued Only":
+                        display_df = valid_results[valid_results['Status'] == 'FAIRLY VALUED']
+                    else:
+                        display_df = df_results
+                    
+                    # Format the dataframe for display
+                    def format_currency(val):
+                        if pd.isna(val) or val is None:
+                            return "N/A"
+                        return f"${val:.2f}"
+                    
+                    def format_percent(val):
+                        if pd.isna(val) or val is None:
+                            return "N/A"
+                        return f"{val:.1f}%"
+                    
+                    def color_status(val):
+                        if val == 'UNDERVALUED':
+                            return 'background-color: #90EE90'
+                        elif val == 'OVERVALUED':
+                            return 'background-color: #FFB6C6'
+                        elif val == 'FAIRLY VALUED':
+                            return 'background-color: #FFE4B5'
+                        return ''
+                    
+                    # Display table
+                    st.markdown("### 📊 DCF Valuation Results")
+                    
+                    # Apply formatting
+                    styled_df = display_df.style.format({
+                        'Current Price': format_currency,
+                        'Intrinsic Value': format_currency,
+                        'Difference': format_currency,
+                        'Over/Under %': format_percent,
+                        'Margin of Safety': format_percent,
+                        'Downside Risk': format_percent
+                    }).applymap(color_status, subset=['Status'])
+                    
+                    st.dataframe(styled_df, use_container_width=True, height=400)
+                    
+                    # Download results
+                    csv = display_df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download Results as CSV",
+                        data=csv,
+                        file_name=f"dcf_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv"
+                    )
+                    
+                    # Best opportunities
+                    if len(valid_results[valid_results['Status'] == 'UNDERVALUED']) > 0:
+                        st.markdown("### 🎯 Top Buying Opportunities (Most Undervalued)")
+                        undervalued_sorted = valid_results[valid_results['Status'] == 'UNDERVALUED'].sort_values('Over/Under %')
+                        st.dataframe(undervalued_sorted[['Ticker', 'Current Price', 'Intrinsic Value', 'Over/Under %', 'Margin of Safety']].head(5), 
+                                    use_container_width=True)
+                    
+                    if len(valid_results[valid_results['Status'] == 'OVERVALUED']) > 0:
+                        st.markdown("### ⚠️ Most Overvalued (Avoid or Sell)")
+                        overvalued_sorted = valid_results[valid_results['Status'] == 'OVERVALUED'].sort_values('Over/Under %', ascending=False)
+                        st.dataframe(overvalued_sorted[['Ticker', 'Current Price', 'Intrinsic Value', 'Over/Under %', 'Downside Risk']].head(5),
+                                    use_container_width=True)
+                else:
+                    st.warning("⚠️ No valid DCF results. Stocks may not have sufficient financial data.")
+                    st.dataframe(df_results, use_container_width=True)
+        
+        elif len(tickers_to_analyze) == 0 and screener_option == "📤 Upload Custom CSV":
+            st.info("👆 Upload a CSV file with stock tickers to begin analysis")
     
     st.markdown("---")
 
