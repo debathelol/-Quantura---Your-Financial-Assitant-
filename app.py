@@ -887,8 +887,13 @@ def get_ai_budget_recommendations(df):
     try:
         client = init_openai_client()
     except Exception as e:
-        print(f"Error initializing OpenAI client: {str(e)}")
-        return None, "AI service unavailable. Please check the configuration."
+        # Fallback to demo mode when client initialization fails
+        print(f"[DEMO MODE] OpenAI client init failed, using demo budget data: {str(e)}")
+        return {
+            "budgets": {"Income": 5000, "Expense": 3500, "Investment": 1000},
+            "explanation": "⚠️ **Demo Mode** - Based on typical spending patterns, we recommend allocating 50% to essential expenses, 30% to discretionary spending, and 20% to savings/investments. This balanced approach helps build wealth while maintaining lifestyle.",
+            "tip": "⚠️ **Demo Mode** - Start by tracking every expense for 30 days to understand where your money actually goes. Small daily expenses often add up to surprisingly large amounts!"
+        }, None
     
     if df is None or df.empty:
         return None, "No transaction data available. Please upload your financial data first."
@@ -981,8 +986,18 @@ def chat_with_ai(user_message, context, chat_history):
     try:
         client = init_openai_client()
     except Exception as e:
-        print(f"Error initializing OpenAI client: {str(e)}")
-        return "Sorry, I'm having trouble connecting to the AI service. Please check that the AI integration is properly configured and try again."
+        # Fallback to demo mode when client initialization fails
+        print(f"[DEMO MODE] OpenAI client init failed, using demo chatbot response: {str(e)}")
+        return """⚠️ **Demo Mode** - I'm here to help with your financial questions! 
+
+While the AI service is temporarily unavailable, here are some general financial tips:
+
+- **Track your spending**: Understanding where your money goes is the first step to financial wellness
+- **Build an emergency fund**: Aim for 3-6 months of expenses in a savings account
+- **Invest for the long term**: Time in the market beats timing the market
+- **Diversify your portfolio**: Don't put all your eggs in one basket
+
+Please try your question again in a moment, or explore the other features of Quantura to analyze your finances!"""
     
     system_prompt = f"""You are a supportive financial coach for Quantura, helping users build wealth and make smart money decisions.
 
@@ -1056,8 +1071,10 @@ def explain_graph_with_ai(graph_type, data_context):
     try:
         client = init_openai_client()
     except Exception as e:
-        print(f"Error initializing OpenAI client: {str(e)}")
-        return "AI explanation is currently unavailable. Please check your AI integration settings."
+        # Fallback to demo mode when client initialization fails
+        print(f"[DEMO MODE] OpenAI client init failed, using demo graph explanation: {str(e)}")
+        from services.stock_ai_analyzer import get_demo_graph_explanation
+        return get_demo_graph_explanation(graph_type)
     
     # Create context-specific prompts based on graph type
     prompts = {
