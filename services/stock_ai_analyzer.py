@@ -2,6 +2,52 @@ import os
 import json
 from openai import OpenAI
 
+# Demo mode data templates - used when AI API is unavailable
+DEMO_STOCK_ANALYSIS = {
+    "rating": "Hold",
+    "confidence": 75,
+    "analysis": "⚠️ **Demo Mode** - Based on the current metrics, this stock shows moderate volatility with reasonable risk-adjusted returns. The Sharpe ratio indicates acceptable performance relative to risk.",
+    "risk_level": "Medium",
+    "key_insights": [
+        "Stock demonstrates typical market volatility patterns",
+        "Risk-adjusted returns are in line with market expectations",
+        "Consider portfolio diversification for optimal risk management",
+        "Monitor key support and resistance levels"
+    ],
+    "recommendation": "⚠️ **Demo Mode** - Maintain current position and monitor market conditions. Consider adding protective stops and regular portfolio rebalancing."
+}
+
+DEMO_PORTFOLIO_INSIGHTS = {
+    "diversification_score": 68,
+    "risk_assessment": "Moderate - Portfolio shows reasonable diversification",
+    "recommendations": [
+        "Consider adding international exposure for better geographic diversification",
+        "Balance growth stocks with some defensive positions",
+        "Review correlation between holdings to reduce overlap",
+        "Maintain emergency cash reserves outside of portfolio"
+    ],
+    "correlation_insight": "⚠️ **Demo Mode** - Your stocks show moderate correlation, suggesting some overlap in market exposure. Consider adding uncorrelated assets.",
+    "rebalancing_suggestion": "⚠️ **Demo Mode** - Consider a balanced allocation based on your risk tolerance and investment goals."
+}
+
+DEMO_GRAPH_EXPLANATIONS = {
+    "monte_carlo": "⚠️ **Demo Mode** - This simulation shows a range of possible future prices based on historical patterns. The fan-shaped pattern indicates increasing uncertainty over time, which is normal. The center line represents the most likely path, while the outer edges show best and worst-case scenarios. Remember, these are projections, not guarantees.",
+    
+    "arima_forecast": "⚠️ **Demo Mode** - This forecast predicts near-term price movements using historical patterns. The upward/downward trend suggests the model's best estimate, but real prices can differ due to unexpected events. Use this as one input among many for decision-making, not as a crystal ball.",
+    
+    "garch_volatility": "⚠️ **Demo Mode** - This chart shows how much the stock price might swing in the future. Rising lines mean more uncertainty ahead, while falling lines suggest calmer trading. High volatility isn't always bad—it can create opportunities—but it does mean bigger potential swings in your account value.",
+    
+    "correlation_matrix": "⚠️ **Demo Mode** - This heatmap shows which stocks tend to move together. Dark colors mean stocks move in sync (high correlation), while lighter colors mean they move independently. For a well-diversified portfolio, you want more variety in colors, not all dark.",
+    
+    "risk_return_scatter": "⚠️ **Demo Mode** - This plot compares risk versus reward for each stock. Stocks in the upper-left offer better returns for less risk (ideal), while lower-right stocks have high risk with lower returns (less ideal). The Sharpe ratio helps identify the best risk-adjusted performers.",
+    
+    "portfolio_pca": "⚠️ **Demo Mode** - This analysis reveals hidden patterns in how your stocks move together. Clustering indicates similar behavior, while spread-out points suggest good diversification. If all your stocks cluster tightly, you're essentially making one big bet instead of multiple independent ones."
+}
+
+def get_demo_graph_explanation(graph_type):
+    """Get demo explanation for a specific graph type"""
+    return DEMO_GRAPH_EXPLANATIONS.get(graph_type, "⚠️ **Demo Mode** - AI explanation is currently unavailable. This chart provides valuable insights into your financial data. Please try again later for a detailed AI-powered explanation.")
+
 def _get_openai_client():
     """Lazy initialization of OpenAI client - works on both Replit and Streamlit Cloud"""
     try:
@@ -91,9 +137,13 @@ Provide a JSON response with:
         return analysis, None
         
     except json.JSONDecodeError as e:
-        return None, f"Failed to parse AI response: {str(e)}. Check your OpenAI API key in Settings."
+        # Fallback to demo mode on parsing error
+        print(f"[DEMO MODE] JSON parse error, using demo data: {str(e)}")
+        return DEMO_STOCK_ANALYSIS, None
     except Exception as e:
-        return None, f"AI analysis error: {str(e)}. Verify your OPENAI_API_KEY is set correctly."
+        # Fallback to demo mode on any API error (rate limit, auth, network, etc.)
+        print(f"[DEMO MODE] API error, using demo data: {str(e)}")
+        return DEMO_STOCK_ANALYSIS, None
 
 def get_ai_portfolio_insights(stocks_data):
     """Get AI insights on portfolio diversification and risk"""
@@ -143,4 +193,6 @@ Provide JSON response with:
         return insights, None
         
     except Exception as e:
-        return None, f"AI portfolio analysis error: {str(e)}"
+        # Fallback to demo mode on any error
+        print(f"[DEMO MODE] Portfolio analysis error, using demo data: {str(e)}")
+        return DEMO_PORTFOLIO_INSIGHTS, None
