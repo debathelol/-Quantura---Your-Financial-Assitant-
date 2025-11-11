@@ -28,6 +28,21 @@ To prevent Yahoo Finance API rate limiting, the application implements a compreh
 - **Performance Benefits**: Analyzing the same stock multiple times within 5 minutes uses cached data (no additional API calls), providing instant results and preventing rate limit errors
 - **Note**: Failed requests are also cached for 5 minutes to prevent repeated failed API calls
 
+### AI Demo Mode Fallback System
+To ensure professional demonstrations even during API failures or when credits run out, all AI features include intelligent demo mode fallbacks:
+- **Automatic Activation**: Demo mode activates automatically when OpenAI API is unavailable (no API key, rate limits, network errors, parsing failures)
+- **Clear Labeling**: All demo responses are clearly marked with ⚠️ **Demo Mode** prefix so users know they're seeing example content
+- **Feature Coverage**: Demo mode supports all 6 AI features:
+  - Stock AI Recommendations (buy/sell ratings, risk analysis, key insights)
+  - Portfolio Insights (diversification scores, rebalancing suggestions)
+  - Graph Explanations (Monte Carlo, ARIMA, GARCH, correlation, risk-return, PCA)
+  - Budget Advisor (income/expense/investment recommendations)
+  - Financial Chatbot (general financial guidance)
+- **Realistic Content**: Demo responses use authentic financial advice and educational content, not placeholder text
+- **Seamless UX**: App functions normally in demo mode - no crashes, error messages, or broken features
+- **Debug Logging**: All demo mode activations log "[DEMO MODE]" messages for troubleshooting
+- **School Project Ready**: Perfect for classroom demonstrations where internet/API access may be unreliable
+
 ## Feature Specifications
 - **Personal Finance**: Auto-categorization, custom rules, budget tracking, subcategorization, savings goals, multi-currency, spending trends, income vs. expense comparisons, CSV/Excel export.
 - **Corporate Analysis**: Revenue trends, income comparisons, employee growth, YOY metrics, financial ratios, competitor analysis, PDF reports.

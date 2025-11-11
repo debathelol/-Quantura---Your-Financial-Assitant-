@@ -72,7 +72,9 @@ def get_ai_stock_analysis(symbol, quote_data, metrics, monte_carlo_results, arim
     try:
         client = _get_openai_client()
         if client is None:
-            return None, "AI service not configured. Please set up OPENAI_API_KEY."
+            # Fallback to demo mode when no API key is configured
+            print(f"[DEMO MODE] No API key configured, using demo data")
+            return DEMO_STOCK_ANALYSIS, None
         
         context = f"""
 You are a quantitative financial analyst. Analyze this stock data and provide insights.
@@ -150,7 +152,9 @@ def get_ai_portfolio_insights(stocks_data):
     try:
         client = _get_openai_client()
         if client is None:
-            return None, "AI service not configured. Please set up OPENAI_API_KEY."
+            # Fallback to demo mode when no API key is configured
+            print(f"[DEMO MODE] No API key configured, using demo portfolio data")
+            return DEMO_PORTFOLIO_INSIGHTS, None
         
         stocks_summary = []
         for stock in stocks_data:
