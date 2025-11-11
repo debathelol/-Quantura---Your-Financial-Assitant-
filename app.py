@@ -959,18 +959,22 @@ Format your response as JSON:
         return result, None
         
     except json.JSONDecodeError as e:
-        print(f"Error parsing AI response: {str(e)}")
-        return None, "AI returned invalid format. Please try again."
+        print(f"[DEMO MODE] JSON parse error, using demo budget data: {str(e)}")
+        # Fallback to demo mode
+        return {
+            "budgets": {"Income": 5000, "Expense": 3500, "Investment": 1000},
+            "explanation": "⚠️ **Demo Mode** - Based on typical spending patterns, we recommend allocating 50% to essential expenses, 30% to discretionary spending, and 20% to savings/investments. This balanced approach helps build wealth while maintaining lifestyle.",
+            "tip": "⚠️ **Demo Mode** - Start by tracking every expense for 30 days to understand where your money actually goes. Small daily expenses often add up to surprisingly large amounts!"
+        }, None
     except Exception as e:
         error_msg = str(e)
-        print(f"Error calling OpenAI API: {error_msg}")
-        
-        if "rate_limit" in error_msg.lower():
-            return None, "Too many requests. Please wait a moment and try again."
-        elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
-            return None, "AI service configuration issue. Please contact support."
-        else:
-            return None, "AI service error. Please try again."
+        print(f"[DEMO MODE] API error, using demo budget data: {error_msg}")
+        # Fallback to demo mode on any API error
+        return {
+            "budgets": {"Income": 5000, "Expense": 3500, "Investment": 1000},
+            "explanation": "⚠️ **Demo Mode** - Based on typical spending patterns, we recommend allocating 50% to essential expenses, 30% to discretionary spending, and 20% to savings/investments. This balanced approach helps build wealth while maintaining lifestyle.",
+            "tip": "⚠️ **Demo Mode** - Start by tracking every expense for 30 days to understand where your money actually goes. Small daily expenses often add up to surprisingly large amounts!"
+        }, None
 
 def chat_with_ai(user_message, context, chat_history):
     """Chat with AI about financial data"""
@@ -1033,17 +1037,19 @@ Keep responses under 200 words, friendly, and focused on action."""
         return response.choices[0].message.content
     except Exception as e:
         error_msg = str(e)
-        print(f"Error calling OpenAI API: {error_msg}")
+        print(f"[DEMO MODE] Chatbot API error, using demo response: {error_msg}")
         
-        # Provide user-friendly error messages
-        if "rate_limit" in error_msg.lower():
-            return "I'm getting a lot of requests right now. Please wait a moment and try again."
-        elif "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
-            return "There's a configuration issue with the AI service. Please contact support."
-        elif "timeout" in error_msg.lower() or "connection" in error_msg.lower():
-            return "I'm having trouble connecting to the AI service. Please check your internet connection and try again."
-        else:
-            return f"I encountered an unexpected error. Please try again. If the problem persists, contact support."
+        # Fallback to demo mode
+        return """⚠️ **Demo Mode** - I'm here to help with your financial questions! 
+
+While the AI service is temporarily unavailable, here are some general financial tips:
+
+- **Track your spending**: Understanding where your money goes is the first step to financial wellness
+- **Build an emergency fund**: Aim for 3-6 months of expenses in a savings account
+- **Invest for the long term**: Time in the market beats timing the market
+- **Diversify your portfolio**: Don't put all your eggs in one basket
+
+Please try your question again in a moment, or explore the other features of Quantura to analyze your finances!"""
 
 def explain_graph_with_ai(graph_type, data_context):
     """Use AI to explain a graph/visualization to the user in simple terms"""
@@ -1148,7 +1154,10 @@ Keep it under 150 words, avoid technical terms, be practical."""
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Unable to generate explanation at the moment. Please try again."
+        # Fallback to demo mode on any error
+        print(f"[DEMO MODE] Graph explanation error, using demo data: {str(e)}")
+        from services.stock_ai_analyzer import get_demo_graph_explanation
+        return get_demo_graph_explanation(graph_type)
 
 st.set_page_config(page_title="Quantura", layout="wide")
 
