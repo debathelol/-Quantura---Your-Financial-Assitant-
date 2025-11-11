@@ -4338,6 +4338,164 @@ if st.session_state.show_stock_analyzer:
                         }
                     ])
                 
+                st.markdown("#### 💰 DCF Valuation Analysis - Is This Stock Overvalued?")
+                st.markdown("**Discounted Cash Flow (DCF)** calculates the intrinsic value of a stock based on its future cash flows.")
+                
+                # DCF Input Parameters in an expander
+                with st.expander("⚙️ Adjust DCF Assumptions", expanded=False):
+                    col_dcf1, col_dcf2, col_dcf3, col_dcf4 = st.columns(4)
+                    with col_dcf1:
+                        growth_rate = st.slider("FCF Growth Rate (%)", min_value=0, max_value=30, value=8, step=1,
+                                               help="Expected annual Free Cash Flow growth rate") / 100
+                    with col_dcf2:
+                        terminal_growth = st.slider("Terminal Growth (%)", min_value=0, max_value=5, value=3, step=1,
+                                                   help="Perpetual growth rate after forecast period") / 100
+                    with col_dcf3:
+                        discount_rate = st.slider("Discount Rate (%)", min_value=5, max_value=20, value=10, step=1,
+                                                 help="Required rate of return (WACC)") / 100
+                    with col_dcf4:
+                        forecast_years = st.slider("Forecast Years", min_value=3, max_value=10, value=5, step=1,
+                                                  help="Number of years to project cash flows")
+                
+                # Calculate DCF
+                dcf_result, dcf_error = analyzer.dcf_valuation(
+                    growth_rate=growth_rate,
+                    terminal_growth=terminal_growth,
+                    discount_rate=discount_rate,
+                    years=forecast_years
+                )
+                
+                if dcf_result:
+                    # Display valuation status prominently
+                    status = dcf_result['valuation_status']
+                    if status == "OVERVALUED":
+                        status_color = "#ff4444"
+                        emoji = "⚠️"
+                    elif status == "UNDERVALUED":
+                        status_color = "#44ff44"
+                        emoji = "✅"
+                    else:
+                        status_color = "#ffaa44"
+                        emoji = "⚖️"
+                    
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, {status_color}22 0%, {status_color}11 100%); 
+                                padding: 20px; border-radius: 10px; border-left: 5px solid {status_color}; margin: 20px 0;'>
+                        <h3 style='margin:0; color:{status_color};'>{emoji} {status}</h3>
+                        <p style='font-size: 1.1em; margin: 10px 0;'>{dcf_result['recommendation']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Key metrics
+                    col_dcf_m1, col_dcf_m2, col_dcf_m3, col_dcf_m4 = st.columns(4)
+                    
+                    with col_dcf_m1:
+                        render_metric_card(
+                            label="Intrinsic Value",
+                            value=f"${dcf_result['intrinsic_value_per_share']:.2f}",
+                            kind="goal"
+                        )
+                    
+                    with col_dcf_m2:
+                        render_metric_card(
+                            label="Current Price",
+                            value=f"${dcf_result['current_market_price']:.2f}",
+                            kind="analytics"
+                        )
+                    
+                    with col_dcf_m3:
+                        delta_sign = "+" if dcf_result['overvaluation_pct'] > 0 else ""
+                        render_metric_card(
+                            label="Over/Under Valued",
+                            value=f"{delta_sign}{dcf_result['overvaluation_pct']:.1f}%",
+                            kind="risk" if dcf_result['overvaluation_pct'] > 0 else "gain"
+                        )
+                    
+                    with col_dcf_m4:
+                        if dcf_result['margin_of_safety'] > 0:
+                            render_metric_card(
+                                label="Margin of Safety",
+                                value=f"{dcf_result['margin_of_safety']:.1f}%",
+                                kind="gain"
+                            )
+                        else:
+                            render_metric_card(
+                                label="Downside Risk",
+                                value=f"{dcf_result['downside_risk']:.1f}%",
+                                kind="risk"
+                            )
+                    
+                    # Show step-by-step calculation in expander
+                    with st.expander("📋 View Step-by-Step DCF Calculation", expanded=False):
+                        st.markdown("### 🧮 Complete DCF Valuation Process")
+                        
+                        st.markdown(f"""
+                        **Step 1️⃣: Current Free Cash Flow (FCF)**
+                        - Current FCF: **${dcf_result['fcf_current_billions']:.2f}B**
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 2️⃣: Project Future Cash Flows**
+                        - Growth Rate: **{dcf_result['assumptions']['growth_rate']:.1f}%** per year
+                        """)
+                        
+                        # Create table for projected FCFs
+                        fcf_data = []
+                        for year in range(1, len(dcf_result['projected_fcfs_billions']) + 1):
+                            fcf_data.append({
+                                'Year': year,
+                                'Projected FCF ($B)': f"{dcf_result['projected_fcfs_billions'][year-1]:.2f}",
+                                'Discounted PV ($B)': f"{dcf_result['discounted_fcfs_billions'][year-1]:.2f}"
+                            })
+                        st.table(pd.DataFrame(fcf_data))
+                        
+                        st.markdown(f"""
+                        **Step 3️⃣: Sum of Discounted FCFs**
+                        - Total PV of forecasted cash flows: **${dcf_result['sum_discounted_fcfs_billions']:.2f}B**
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 4️⃣: Terminal Value**
+                        - Terminal Growth Rate: **{dcf_result['assumptions']['terminal_growth']:.1f}%**
+                        - Terminal Value: **${dcf_result['terminal_value_billions']:.2f}B**
+                        - Present Value of Terminal: **${dcf_result['pv_terminal_value_billions']:.2f}B**
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 5️⃣: Enterprise Value**
+                        - Enterprise Value = Sum of PVs + PV of Terminal Value
+                        - **EV = ${dcf_result['enterprise_value_billions']:.2f}B**
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 6️⃣: Adjust for Debt & Cash**
+                        - Total Debt: **${dcf_result['total_debt_billions']:.2f}B**
+                        - Cash: **${dcf_result['cash_billions']:.2f}B**
+                        - Equity Value = EV - Debt + Cash
+                        - **Equity Value = ${dcf_result['equity_value_billions']:.2f}B**
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 7️⃣: Intrinsic Value per Share**
+                        - Shares Outstanding: **{dcf_result['shares_outstanding_millions']:.0f}M**
+                        - **Intrinsic Value = ${dcf_result['intrinsic_value_per_share']:.2f}** per share
+                        """)
+                        
+                        st.markdown(f"""
+                        **Step 8️⃣: Compare with Market Price**
+                        - Market Price: **${dcf_result['current_market_price']:.2f}**
+                        - Intrinsic Value: **${dcf_result['intrinsic_value_per_share']:.2f}**
+                        - Difference: **${dcf_result['price_difference']:.2f}** ({dcf_result['overvaluation_pct']:.1f}%)
+                        
+                        **Verdict: {dcf_result['valuation_status']}** {emoji}
+                        """)
+                    
+                    st.info("💡 **Tip:** Adjust the assumptions above to run sensitivity analysis and see how different scenarios affect valuation.")
+                    
+                elif dcf_error:
+                    st.warning(f"⚠️ DCF Analysis not available: {dcf_error}")
+                    st.info("💡 DCF valuation requires detailed financial statements. Some stocks (especially small-cap, international, or recently IPO'd) may not have sufficient data available.")
+                
                 st.markdown("#### 🌊 GARCH Volatility Forecast")
                 garch_result, garch_error = analyzer.garch_volatility(p=1, q=1)
                 
