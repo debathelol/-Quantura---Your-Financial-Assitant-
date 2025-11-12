@@ -216,7 +216,7 @@ This financial analytics dashboard was created as a school project to demonstrat
 
 debarghya47@gmail.com
 
-Project Link: [https://github.com/yourusername/financial-analytics-dashboard](https://github.com/yourusername/financial-analytics-dashboard)
+
 
 ---
 
