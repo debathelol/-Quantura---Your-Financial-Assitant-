@@ -46,9 +46,24 @@ A comprehensive financial analytics application built with Streamlit that provid
 
 
 ## 📸 Screenshots
+![Quantura-images-0](https://github.com/user-attachments/assets/371ba0ed-a7fd-4231-acf0-07f99f4a363e)
+![Quantura-images-1](https://github.com/user-attachments/assets/470d1435-67c1-4e21-802e-a485cd3f54af)
+![Quantura-images-2](https://github.com/user-attachments/assets/d3f288d9-5ba4-472c-9935-6ec7bc867b08)
+![Quantura-images-3](https://github.com/user-attachments/assets/b3a8be96-ed2d-42a9-82d6-de630eadfae2)
+![Quantura-images-4](https://github.com/user-attachments/assets/fc10ac23-93f0-4597-ba92-32e8b9bdccc4)
 
+![Quantura-images-5](https://github.com/user-attachments/assets/1bd561db-5a10-4372-889e-f131c602ae3f)
+![Quantura-images-6](https://github.com/user-attachments/assets/9d8bf428-fd1d-4b44-9796-68bbde9ff397)
+![Quantura-images-7](https://github.com/user-attachments/assets/aed87ebf-3c89-4f54-bda2-cb7a3d556c50)
+![Quantura-images-8](https://github.com/user-attachments/assets/022ef70a-6bb4-4d55-b8fc-8dc6503f79b0)
+![Quantura-images-9](https://github.com/user-attachments/assets/eec80923-7716-4154-9ac8-9c8ecc9bf038)
+![Quantura-images-10](https://github.com/user-attachments/assets/a12f39f5-e34a-4f44-a039-75fd37adfee1)
+![Quantura-images-11](https://github.com/user-attachments/assets/00419c71-91b8-4f69-b481-9a8b02a19ea7)
+![Quantura-images-12](https://github.com/user-attachments/assets/7c386e7c-1c28-49f3-a22f-e57797f0bec7)
+![Quantura-images-13](https://github.com/user-attachments/assets/0c83c96a-1772-4911-9576-9744427c6af3)
 
 ## 🛠️ Technology Stack
+
 
 - **Frontend**: Streamlit
 - **Data Analysis**: Pandas, NumPy, SciPy
