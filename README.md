@@ -1,4 +1,4 @@
-![StreamlitPandas - Replit_page-0001](https://github.com/user-attachments/assets/1c901558-e5f2-459d-9ec3-04d25aaca81c)# 📊 Financial Analytics Dashboard
+# 📊 Financial Analytics Dashboard
 
 A comprehensive financial analytics application built with Streamlit that provides AI-powered stock analysis, portfolio management, personal finance tracking, and advanced quantitative analysis tools.
 
