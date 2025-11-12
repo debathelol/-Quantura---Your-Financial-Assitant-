@@ -1,0 +1,52 @@
+# 🚀 Quantura: An Institutional-Grade Financial Analytics Platform
+
+**Quantura** is a full-stack, AI-powered financial platform built from scratch in Python. It scales from personal wealth planning to institutional-grade quantitative equity analysis, implementing advanced econometric models and AI-driven insights.
+
+* **Project Status:** ~6,500 lines of Python code, modular architecture.
+* **Core Econometrics:** `stock_analyzer.py` (313 lines of models: GARCH, ARIMA, Monte Carlo).
+* **AI Integration:** `stock_ai_analyzer.py` (130 lines for AI-driven insights).
+
+## 👨‍🎓 About This Project (The "Why")
+
+As a student from a rural, non-financial background, I built Quantura to provide the powerful, data-driven tools (often locked behind expensive paywalls) to everyone. This project was my personal solution to the problems of financial illiteracy and information asymmetry I saw around me. It was not a school project, but a personal mission to prove that finance could be democratized through technology.
+
+---
+
+## 📸 Key Feature Showcase
+
+*(This is the most important section. An admissions tutor will look here and nowhere else.)*
+
+### 1. Quantitative Equity Analyzer (The "Quant" Engine)
+Performs university-level analysis on global stocks (AAPL, TSLA, Toyota, Reliance) using advanced econometric models.
+* Monte Carlo simulations
+* GARCH volatility forecasting
+* ARIMA price forecasting
+* Black-Scholes options pricing
+* Full Discounted Cash Flow (DCF) valuation
+
+![Quantura-images-10](https://github.com/user-attachments/assets/a12f39f5-e34a-4f44-a039-75fd37adfee1)
+![Quantura-images-12](https://github.com/user-attachments/assets/7c386e7c-1c28-49f3-a22f-e57797f0bec7)
+
+### 2. AI-Powered Advisory Engine
+Integrates AI to synthesize complex data into simple, actionable insights.
+* Translates complex data (like GARCH models) into plain-English advice.
+* Provides clear "Buy/Sell" verdicts with confidence scores.
+* A full "AI Chat" assistant to answer unstructured user questions.
+
+![Quantura-images-13](https://github.com/user-attachments/assets/0c83c96a-1772-4911-9576-9744427c6af3)
+![Quantura-images-11](https://github.com/user-attachments/assets/00419c71-91b8-4f69-b481-9a8b02a19ea7)
+
+### 3. Behavioural Planning & Economic Models
+Encodes financial best practices and behavioural finance concepts (from my Yale coursework) to guide users toward better long-term decisions.
+* **Behavioural Budgeting:** Generates budgets based on a user's "Financial Mindset" (Stable, Balanced, etc.).
+* **Algorithmic Advisory:** "Smart Car Purchase Calculator" (20-5-10 rule) and "Debt Payoff Planner."
+* **Economic Modelling:** A full "Rent vs. Buy" calculator that models opportunity cost and inflation.
+
+![Quantura-images-7](https://github.com/user-attachments/assets/aed87ebf-3c89-4f54-bda2-cb7a3d556c50)
+![Quantura-images-8](https://github.com/user-attachments/assets/022ef70a-6bb4-4d55-b8fc-8dc6503f79b0)
+![Quantura-images-5](https://github.com/user-attachments/assets/1bd561db-5a10-4372-889e-f131c602ae3f)
+
+---
+
+## 🛠️ Technology Stack & Architecture
+*(Here you can put the rest of your original README: Tech Stack, Project Structure, etc. They can scroll down if they are interested.)*
