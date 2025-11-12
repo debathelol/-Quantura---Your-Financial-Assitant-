@@ -1,4 +1,4 @@
-# 📊 Financial Analytics Dashboard
+![StreamlitPandas - Replit_page-0001](https://github.com/user-attachments/assets/1c901558-e5f2-459d-9ec3-04d25aaca81c)# 📊 Financial Analytics Dashboard
 
 A comprehensive financial analytics application built with Streamlit that provides AI-powered stock analysis, portfolio management, personal finance tracking, and advanced quantitative analysis tools.
 
@@ -44,10 +44,26 @@ A comprehensive financial analytics application built with Streamlit that provid
 
 [Add your deployed app link here]
 
-## 📸 Screenshots
-![StreamlitPandas - Replit_page-0013]
 
-[Add screenshots of your app here]
+## 📸 Screenshots
+
+![StreamlitPandas - Replit_page-0001](https://github.com/user-attachments/assets/bfb6e20b-ffe9-495d-b8da-000bbf92421b)
+![StreamlitPandas - Replit_page-0002](https://github.com/user-attachments/assets/8acb37c9-2082-46d1-bdc5-fd305046ccca)
+![StreamlitPandas - Replit_page-0003](https://github.com/user-attachments/assets/c0226e97-1c77-447b-801d-e46230abc965)
+![StreamlitPandas - Replit_page-0004](https://github.com/user-attachments/assets/38df91f8-dcae-49e5-a5e4-b028634b4f04)
+![StreamlitPandas - Replit_page-0005](https://github.com/user-attachments/assets/c040c3b3-ee4e-400f-8a39-98ae0378c890)
+![StreamlitPandas - Replit_page-0006](https://github.com/user-attachments/assets/92f0aeb6-df1c-4f87-9fe3-408444075f4a)
+![StreamlitPandas - Replit_page-0007](https://github.com/user-attachments/assets/fec9c3cb-f6a7-4dc7-921b-c27a2554fd9d)
+![StreamlitPandas - Replit_page-0008](https://github.com/user-attachments/assets/a3b7a9f1-1a07-43e9-a757-510bd3a20a1a)
+![StreamlitPandas - Replit_page-0009](https://github.com/user-attachments/assets/150b82c8-8a0e-4b40-915a-9445230007ae)
+![StreamlitPandas - Replit_page-0010](https://github.com/user-attachments/assets/367a217a-fd3b-477c-a61f-fdbd560ae7f4)
+![StreamlitPandas - Replit_page-0011](https://github.com/user-attachments/assets/fb45dfdd-122a-403f-a69e-4daaa6e784c0)
+![StreamlitPandas - Replit_page-0012](https://github.com/user-attachments/assets/33a311c2-a95d-4887-8ce9-05edbdce052e)
+![StreamlitPandas - Replit_page-0011](https://github.com/user-attachments/assets/af9deae4-fbbb-45d3-8941-ab984bb32e9d)
+![StreamlitPandas - Replit_page-0013](https://github.com/user-attachments/assets/564cd8ce-2297-4278-935f-747854b17245)
+![StreamlitPandas - Replit_page-0014](https://github.com/user-attachments/assets/7d2e0dbc-cdeb-403f-94cc-98ae7f6f0928)
+![StreamlitPandas - Replit_page-0015](https://github.com/user-attachments/assets/3b6af964-d515-49d9-988c-92318ba1727c)
+
 
 ## 🛠️ Technology Stack
 
