@@ -45,7 +45,7 @@ A comprehensive financial analytics application built with Streamlit that provid
 [Add your deployed app link here]
 
 ## 📸 Screenshots
-![StreamlitPandas - Replit_page-0013](https://github.com/user-attachments/assets/4e6f0fc3-f1d5-4288-aadf-dc6ce499548f)
+![StreamlitPandas - Replit_page-0013]
 
 [Add screenshots of your app here]
 
