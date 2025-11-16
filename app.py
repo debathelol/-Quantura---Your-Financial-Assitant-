@@ -5204,27 +5204,45 @@ if st.session_state.show_indian_stocks:
                                 st.metric("Sortino Ratio", f"{metrics.get('sortino_ratio', 0):.3f}")
                             
                             # Monte Carlo
-                            st.markdown("### 🎲 Monte Carlo Simulation (1 Year Projection)")
-                            with st.spinner("Running 10,000 simulations..."):
-                                mc_results, mc_error = analyzer.monte_carlo_simulation(days=252)
-                                if mc_results:
-                                    st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_results, ticker, quote.get('price', 0))), use_container_width=True)
-                                    
-                                    col_mc1, col_mc2, col_mc3 = st.columns(3)
-                                    with col_mc1:
-                                        st.metric("Expected Price (1Y)", f"₹{mc_results.get('expected_final_price', 0):.2f}")
-                                    with col_mc2:
-                                        st.metric("95% Confidence Lower", f"₹{mc_results.get('percentile_5', 0):.2f}")
-                                    with col_mc3:
-                                        st.metric("95% Confidence Upper", f"₹{mc_results.get('percentile_95', 0):.2f}")
+                            st.markdown("### 🎲 Monte Carlo Simulation")
+                            mc_days = st.slider("Simulation Days", 30, 730, 252, key=f"indian_mc_days_{ticker}", help="Number of days to simulate")
+                            
+                            mc_results, mc_error = analyzer.monte_carlo_simulation(days=mc_days)
+                            if mc_results:
+                                st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_results, ticker, quote.get('price', 0))), use_container_width=True)
+                                
+                                col_mc1, col_mc2, col_mc3 = st.columns(3)
+                                with col_mc1:
+                                    st.metric("Expected Price", f"₹{mc_results.get('expected_final_price', 0):.2f}")
+                                with col_mc2:
+                                    st.metric("95% Lower", f"₹{mc_results.get('percentile_5', 0):.2f}")
+                                with col_mc3:
+                                    st.metric("95% Upper", f"₹{mc_results.get('percentile_95', 0):.2f}")
+                                
+                                if st.button("🤖 Explain this graph", key=f"explain_mc_indian_{ticker}"):
+                                    with st.spinner("AI is analyzing..."):
+                                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\nExpected Price ({mc_days} days): ₹{mc_results.get('expected_final_price', 0):.2f}"
+                                        explanation = explain_graph_with_ai("monte_carlo", context)
+                                        st.info(f"**AI Explanation:**\n\n{explanation}")
+                            else:
+                                st.error(f"Monte Carlo failed: {mc_error}")
                             
                             # ARIMA Forecast
-                            st.markdown("### 📈 ARIMA Price Forecast (30 Days)")
-                            with st.spinner("Forecasting with ARIMA..."):
-                                arima_results, arima_error = analyzer.arima_forecast(days=30)
-                                if arima_results:
-                                    st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_results, ticker)), use_container_width=True)
-                                    st.metric("30-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
+                            st.markdown("### 📈 ARIMA Price Forecast")
+                            arima_days = st.slider("Forecast Days", 7, 90, 30, key=f"indian_arima_days_{ticker}", help="Number of days to forecast")
+                            
+                            arima_results, arima_error = analyzer.arima_forecast(days=arima_days)
+                            if arima_results:
+                                st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_results, ticker)), use_container_width=True)
+                                st.metric(f"{arima_days}-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
+                                
+                                if st.button("🤖 Explain this graph", key=f"explain_arima_indian_{ticker}"):
+                                    with st.spinner("AI is analyzing..."):
+                                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\n{arima_days}-Day Forecast: ₹{arima_results['forecast'][-1]:.2f}"
+                                        explanation = explain_graph_with_ai("arima_forecast", context)
+                                        st.info(f"**AI Explanation:**\n\n{explanation}")
+                            else:
+                                st.error(f"ARIMA failed: {arima_error}")
                             
                             # DCF Valuation
                             st.markdown("### 💰 DCF Intrinsic Valuation")
@@ -5262,16 +5280,18 @@ if st.session_state.show_indian_stocks:
                                     st.error("🔴 **OVERVALUED** - Stock is trading above intrinsic value")
                                 else:
                                     st.info("🟡 **FAIRLY VALUED** - Stock is trading near intrinsic value")
+                            else:
+                                st.warning(f"DCF valuation failed: {dcf_error}")
                             
-                            # AI Recommendation
+                            # AI Recommendation (always available)
                             st.markdown("### 🤖 AI-Powered Investment Recommendation")
-                            if st.button("Get AI Analysis", key=f"ai_indian_{ticker}"):
+                            if st.button("Get AI Analysis", key=f"ai_indian_{ticker}", type="primary"):
                                 with st.spinner("AI is analyzing..."):
                                     from services.stock_ai_analyzer import get_ai_stock_analysis
                                     ai_analysis, ai_error = get_ai_stock_analysis(
                                         ticker, quote, metrics, 
-                                        mc_results if mc_results else {},
-                                        arima_results if arima_results else {}
+                                        mc_results if 'mc_results' in locals() and mc_results else {},
+                                        arima_results if 'arima_results' in locals() and arima_results else {}
                                     )
                                     
                                     if ai_analysis:
@@ -5284,6 +5304,8 @@ if st.session_state.show_indian_stocks:
                                             st.markdown(f"- {insight}")
                                         
                                         st.info(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
+                                    else:
+                                        st.error(f"AI analysis failed: {ai_error if ai_error else 'Unknown error'}")
                         else:
                             st.error(f"Failed to analyze {ticker}: {metrics_error or quote_error}")
                     else:
