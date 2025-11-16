@@ -5137,6 +5137,10 @@ if st.session_state.show_indian_stocks:
         st.info("💡 **Full Analysis:** Monte Carlo, ARIMA forecasting, DCF valuation, GARCH volatility, and AI recommendations")
         st.caption("Enter any Indian company name (Reliance, TCS, Infosys, HDFC Bank, etc.) or NSE ticker")
         
+        # Initialize session state for Indian stock analysis
+        if 'indian_analysis_results' not in st.session_state:
+            st.session_state.indian_analysis_results = None
+        
         indian_company = st.text_input(
             "Company Name or Ticker (NSE)",
             placeholder="e.g., Reliance, TCS, Infosys, HDFC Bank...",
@@ -5174,142 +5178,162 @@ if st.session_state.show_indian_stocks:
                         metrics, metrics_error = analyzer.calculate_metrics()
                         
                         if quote and metrics:
+                            # Store results in session state
+                            st.session_state.indian_analysis_results = {
+                                'ticker': ticker,
+                                'analyzer': analyzer,
+                                'quote': quote,
+                                'metrics': metrics,
+                                'data_df': data_df,
+                                'returns': returns
+                            }
                             st.success(f"✅ Successfully analyzed {ticker}")
-                            
-                            # Display quote card
-                            col_q1, col_q2, col_q3, col_q4 = st.columns(4)
-                            with col_q1:
-                                st.metric("Current Price", f"₹{quote.get('price', 0):.2f}", delta=quote.get('change_percent', '0%'))
-                            with col_q2:
-                                st.metric("Volume", f"{quote.get('volume', 0):,}")
-                            with col_q3:
-                                st.metric("Day High", f"₹{quote.get('day_high', 0):.2f}")
-                            with col_q4:
-                                st.metric("Day Low", f"₹{quote.get('day_low', 0):.2f}")
-                            
-                            # Price chart
-                            st.markdown("### 📈 Price History")
-                            st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, ticker)), use_container_width=True)
-                            
-                            # Risk metrics
-                            st.markdown("### 📊 Risk Metrics")
-                            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-                            with col_m1:
-                                st.metric("Sharpe Ratio", f"{metrics.get('sharpe_ratio', 0):.3f}")
-                            with col_m2:
-                                st.metric("Beta", f"{metrics.get('beta', 0):.3f}")
-                            with col_m3:
-                                st.metric("Volatility", f"{metrics.get('volatility', 0):.2%}")
-                            with col_m4:
-                                st.metric("Sortino Ratio", f"{metrics.get('sortino_ratio', 0):.3f}")
-                            
-                            # Monte Carlo
-                            st.markdown("### 🎲 Monte Carlo Simulation")
-                            mc_days = st.slider("Simulation Days", 30, 730, 252, key=f"indian_mc_days_{ticker}", help="Number of days to simulate")
-                            
-                            mc_results, mc_error = analyzer.monte_carlo_simulation(days=mc_days)
-                            if mc_results:
-                                st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_results, ticker, quote.get('price', 0))), use_container_width=True)
-                                
-                                col_mc1, col_mc2, col_mc3 = st.columns(3)
-                                with col_mc1:
-                                    st.metric("Expected Price", f"₹{mc_results.get('expected_final_price', 0):.2f}")
-                                with col_mc2:
-                                    st.metric("95% Lower", f"₹{mc_results.get('percentile_5', 0):.2f}")
-                                with col_mc3:
-                                    st.metric("95% Upper", f"₹{mc_results.get('percentile_95', 0):.2f}")
-                                
-                                if st.button("🤖 Explain this graph", key=f"explain_mc_indian_{ticker}"):
-                                    with st.spinner("AI is analyzing..."):
-                                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\nExpected Price ({mc_days} days): ₹{mc_results.get('expected_final_price', 0):.2f}"
-                                        explanation = explain_graph_with_ai("monte_carlo", context)
-                                        st.info(f"**AI Explanation:**\n\n{explanation}")
-                            else:
-                                st.error(f"Monte Carlo failed: {mc_error}")
-                            
-                            # ARIMA Forecast
-                            st.markdown("### 📈 ARIMA Price Forecast")
-                            arima_days = st.slider("Forecast Days", 7, 90, 30, key=f"indian_arima_days_{ticker}", help="Number of days to forecast")
-                            
-                            arima_results, arima_error = analyzer.arima_forecast(days=arima_days)
-                            if arima_results:
-                                st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_results, ticker)), use_container_width=True)
-                                st.metric(f"{arima_days}-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
-                                
-                                if st.button("🤖 Explain this graph", key=f"explain_arima_indian_{ticker}"):
-                                    with st.spinner("AI is analyzing..."):
-                                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\n{arima_days}-Day Forecast: ₹{arima_results['forecast'][-1]:.2f}"
-                                        explanation = explain_graph_with_ai("arima_forecast", context)
-                                        st.info(f"**AI Explanation:**\n\n{explanation}")
-                            else:
-                                st.error(f"ARIMA failed: {arima_error}")
-                            
-                            # DCF Valuation
-                            st.markdown("### 💰 DCF Intrinsic Valuation")
-                            with st.expander("🔧 Customize DCF Parameters", expanded=False):
-                                col_dcf1, col_dcf2, col_dcf3 = st.columns(3)
-                                with col_dcf1:
-                                    growth_rate = st.slider("Revenue Growth Rate (%)", 0, 50, 10, key=f"growth_{ticker}") / 100
-                                with col_dcf2:
-                                    discount_rate = st.slider("Discount Rate (%)", 1, 20, 10, key=f"discount_{ticker}") / 100
-                                with col_dcf3:
-                                    terminal_growth = st.slider("Terminal Growth (%)", 0, 10, 3, key=f"terminal_{ticker}") / 100
-                            
-                            dcf_result, dcf_error = analyzer.dcf_valuation(
-                                growth_rate=growth_rate if 'growth_rate' in locals() else 0.08,
-                                discount_rate=discount_rate if 'discount_rate' in locals() else 0.10,
-                                terminal_growth=terminal_growth if 'terminal_growth' in locals() else 0.03
-                            )
-                            
-                            if dcf_result:
-                                intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
-                                current_price = quote.get('price', 0)
-                                
-                                col_dcf_r1, col_dcf_r2, col_dcf_r3 = st.columns(3)
-                                with col_dcf_r1:
-                                    st.metric("Current Price", f"₹{current_price:.2f}")
-                                with col_dcf_r2:
-                                    st.metric("Intrinsic Value", f"₹{intrinsic_value:.2f}")
-                                with col_dcf_r3:
-                                    upside = ((intrinsic_value - current_price) / current_price) * 100
-                                    st.metric("Upside/Downside", f"{upside:+.1f}%")
-                                
-                                if upside > 10:
-                                    st.success("💚 **UNDERVALUED** - Stock is trading below intrinsic value")
-                                elif upside < -10:
-                                    st.error("🔴 **OVERVALUED** - Stock is trading above intrinsic value")
-                                else:
-                                    st.info("🟡 **FAIRLY VALUED** - Stock is trading near intrinsic value")
-                            else:
-                                st.warning(f"DCF valuation failed: {dcf_error}")
-                            
-                            # AI Recommendation (always available)
-                            st.markdown("### 🤖 AI-Powered Investment Recommendation")
-                            if st.button("Get AI Analysis", key=f"ai_indian_{ticker}", type="primary"):
-                                with st.spinner("AI is analyzing..."):
-                                    from services.stock_ai_analyzer import get_ai_stock_analysis
-                                    ai_analysis, ai_error = get_ai_stock_analysis(
-                                        ticker, quote, metrics, 
-                                        mc_results if 'mc_results' in locals() and mc_results else {},
-                                        arima_results if 'arima_results' in locals() and arima_results else {}
-                                    )
-                                    
-                                    if ai_analysis:
-                                        st.markdown(f"**Rating:** {ai_analysis.get('rating', 'N/A')} | **Confidence:** {ai_analysis.get('confidence', 0)}%")
-                                        st.markdown(f"**Risk Level:** {ai_analysis.get('risk_level', 'N/A')}")
-                                        st.markdown(f"**Analysis:** {ai_analysis.get('analysis', '')}")
-                                        
-                                        st.markdown("**Key Insights:**")
-                                        for insight in ai_analysis.get('key_insights', []):
-                                            st.markdown(f"- {insight}")
-                                        
-                                        st.info(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
-                                    else:
-                                        st.error(f"AI analysis failed: {ai_error if ai_error else 'Unknown error'}")
                         else:
                             st.error(f"Failed to analyze {ticker}: {metrics_error or quote_error}")
                     else:
                         st.error(f"Failed to fetch data for {ticker}: {error}")
+        
+        # Display analysis results (outside button handler so they persist)
+        if st.session_state.indian_analysis_results:
+            results = st.session_state.indian_analysis_results
+            ticker = results['ticker']
+            analyzer = results['analyzer']
+            quote = results['quote']
+            metrics = results['metrics']
+            
+            st.divider()
+            st.markdown(f"### 📊 Analysis Results for {ticker}")
+            
+            # Display quote card
+            col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+            with col_q1:
+                st.metric("Current Price", f"₹{quote.get('price', 0):.2f}", delta=quote.get('change_percent', '0%'))
+            with col_q2:
+                st.metric("Volume", f"{quote.get('volume', 0):,}")
+            with col_q3:
+                st.metric("Day High", f"₹{quote.get('day_high', 0):.2f}")
+            with col_q4:
+                st.metric("Day Low", f"₹{quote.get('day_low', 0):.2f}")
+            
+            # Price chart
+            st.markdown("### 📈 Price History")
+            st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, ticker)), use_container_width=True)
+            
+            # Risk metrics
+            st.markdown("### 📊 Risk Metrics")
+            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+            with col_m1:
+                st.metric("Sharpe Ratio", f"{metrics.get('sharpe_ratio', 0):.3f}")
+            with col_m2:
+                st.metric("Beta", f"{metrics.get('beta', 0):.3f}")
+            with col_m3:
+                st.metric("Volatility", f"{metrics.get('volatility', 0):.2%}")
+            with col_m4:
+                st.metric("Sortino Ratio", f"{metrics.get('sortino_ratio', 0):.3f}")
+            
+            # Monte Carlo
+            st.markdown("### 🎲 Monte Carlo Simulation")
+            mc_days = st.slider("Simulation Days", 30, 730, 252, key=f"indian_mc_days_{ticker}", help="Number of days to simulate")
+            
+            mc_results, mc_error = analyzer.monte_carlo_simulation(days=mc_days)
+            if mc_results:
+                st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_results, ticker, quote.get('price', 0))), use_container_width=True)
+                
+                col_mc1, col_mc2, col_mc3 = st.columns(3)
+                with col_mc1:
+                    st.metric("Expected Price", f"₹{mc_results.get('expected_final_price', 0):.2f}")
+                with col_mc2:
+                    st.metric("95% Lower", f"₹{mc_results.get('percentile_5', 0):.2f}")
+                with col_mc3:
+                    st.metric("95% Upper", f"₹{mc_results.get('percentile_95', 0):.2f}")
+                
+                if st.button("🤖 Explain this graph", key=f"explain_mc_indian_{ticker}"):
+                    with st.spinner("AI is analyzing..."):
+                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\nExpected Price ({mc_days} days): ₹{mc_results.get('expected_final_price', 0):.2f}"
+                        explanation = explain_graph_with_ai("monte_carlo", context)
+                        st.info(f"**AI Explanation:**\n\n{explanation}")
+            else:
+                st.error(f"Monte Carlo failed: {mc_error}")
+            
+            # ARIMA Forecast
+            st.markdown("### 📈 ARIMA Price Forecast")
+            arima_days = st.slider("Forecast Days", 7, 90, 30, key=f"indian_arima_days_{ticker}", help="Number of days to forecast")
+            
+            arima_results, arima_error = analyzer.arima_forecast(days=arima_days)
+            if arima_results:
+                st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_results, ticker)), use_container_width=True)
+                st.metric(f"{arima_days}-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
+                
+                if st.button("🤖 Explain this graph", key=f"explain_arima_indian_{ticker}"):
+                    with st.spinner("AI is analyzing..."):
+                        context = f"Stock: {ticker}\nCurrent Price: ₹{quote.get('price', 0):.2f}\n{arima_days}-Day Forecast: ₹{arima_results['forecast'][-1]:.2f}"
+                        explanation = explain_graph_with_ai("arima_forecast", context)
+                        st.info(f"**AI Explanation:**\n\n{explanation}")
+            else:
+                st.error(f"ARIMA failed: {arima_error}")
+            
+            # DCF Valuation
+            st.markdown("### 💰 DCF Intrinsic Valuation")
+            with st.expander("🔧 Customize DCF Parameters", expanded=False):
+                col_dcf1, col_dcf2, col_dcf3 = st.columns(3)
+                with col_dcf1:
+                    growth_rate = st.slider("Revenue Growth Rate (%)", 0, 50, 10, key=f"growth_{ticker}") / 100
+                with col_dcf2:
+                    discount_rate = st.slider("Discount Rate (%)", 1, 20, 10, key=f"discount_{ticker}") / 100
+                with col_dcf3:
+                    terminal_growth = st.slider("Terminal Growth (%)", 0, 10, 3, key=f"terminal_{ticker}") / 100
+            
+            dcf_result, dcf_error = analyzer.dcf_valuation(
+                growth_rate=growth_rate if 'growth_rate' in locals() else 0.08,
+                discount_rate=discount_rate if 'discount_rate' in locals() else 0.10,
+                terminal_growth=terminal_growth if 'terminal_growth' in locals() else 0.03
+            )
+            
+            if dcf_result:
+                intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
+                current_price = quote.get('price', 0)
+                
+                col_dcf_r1, col_dcf_r2, col_dcf_r3 = st.columns(3)
+                with col_dcf_r1:
+                    st.metric("Current Price", f"₹{current_price:.2f}")
+                with col_dcf_r2:
+                    st.metric("Intrinsic Value", f"₹{intrinsic_value:.2f}")
+                with col_dcf_r3:
+                    upside = ((intrinsic_value - current_price) / current_price) * 100
+                    st.metric("Upside/Downside", f"{upside:+.1f}%")
+                
+                if upside > 10:
+                    st.success("💚 **UNDERVALUED** - Stock is trading below intrinsic value")
+                elif upside < -10:
+                    st.error("🔴 **OVERVALUED** - Stock is trading above intrinsic value")
+                else:
+                    st.info("🟡 **FAIRLY VALUED** - Stock is trading near intrinsic value")
+            else:
+                st.warning(f"DCF valuation failed: {dcf_error}")
+            
+            # AI Recommendation (always available)
+            st.markdown("### 🤖 AI-Powered Investment Recommendation")
+            if st.button("Get AI Analysis", key=f"ai_indian_{ticker}", type="primary"):
+                with st.spinner("AI is analyzing..."):
+                    from services.stock_ai_analyzer import get_ai_stock_analysis
+                    ai_analysis, ai_error = get_ai_stock_analysis(
+                        ticker, quote, metrics, 
+                        mc_results if 'mc_results' in locals() and mc_results else {},
+                        arima_results if 'arima_results' in locals() and arima_results else {}
+                    )
+                    
+                    if ai_analysis:
+                        st.markdown(f"**Rating:** {ai_analysis.get('rating', 'N/A')} | **Confidence:** {ai_analysis.get('confidence', 0)}%")
+                        st.markdown(f"**Risk Level:** {ai_analysis.get('risk_level', 'N/A')}")
+                        st.markdown(f"**Analysis:** {ai_analysis.get('analysis', '')}")
+                        
+                        st.markdown("**Key Insights:**")
+                        for insight in ai_analysis.get('key_insights', []):
+                            st.markdown(f"- {insight}")
+                        
+                        st.info(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
+                    else:
+                        st.error(f"AI analysis failed: {ai_error if ai_error else 'Unknown error'}")
     
     with indian_tab2:
         st.subheader("🔍 Batch DCF Stock Screener")
