@@ -5130,11 +5130,12 @@ if st.session_state.show_indian_stocks:
     st.header("🇮🇳 Indian Stock Market Analyzer")
     st.markdown("**Comprehensive analysis of NSE/BSE stocks** with DCF valuation, Monte Carlo simulations, ARIMA forecasting, and AI-powered insights for the Indian market.")
     
-    indian_tab1, indian_tab2, indian_tab3 = st.tabs(["📊 Stock Analysis", "🔍 Stock Screener", "📈 Portfolio Builder"])
+    indian_tab1, indian_tab2, indian_tab3 = st.tabs(["📊 Individual Analysis (Full)", "🔍 Batch DCF Screener", "📈 Portfolio Correlation"])
     
     with indian_tab1:
         st.subheader("Individual Indian Stock Analysis")
-        st.info("💡 **Quick Start:** Enter any Indian company name (Reliance, TCS, Infosys, HDFC Bank, etc.) or NSE ticker")
+        st.info("💡 **Full Analysis:** Monte Carlo, ARIMA forecasting, DCF valuation, GARCH volatility, and AI recommendations")
+        st.caption("Enter any Indian company name (Reliance, TCS, Infosys, HDFC Bank, etc.) or NSE ticker")
         
         indian_company = st.text_input(
             "Company Name or Ticker (NSE)",
@@ -5188,7 +5189,7 @@ if st.session_state.show_indian_stocks:
                             
                             # Price chart
                             st.markdown("### 📈 Price History")
-                            st.plotly_chart(create_price_chart(analyzer.data, ticker), use_container_width=True)
+                            st.plotly_chart(add_plotly_animations(create_candlestick_chart(analyzer.data, ticker)), use_container_width=True)
                             
                             # Risk metrics
                             st.markdown("### 📊 Risk Metrics")
@@ -5207,7 +5208,7 @@ if st.session_state.show_indian_stocks:
                             with st.spinner("Running 10,000 simulations..."):
                                 mc_results, mc_error = analyzer.monte_carlo_simulation(days=252)
                                 if mc_results:
-                                    st.plotly_chart(create_monte_carlo_chart(mc_results, ticker), use_container_width=True)
+                                    st.plotly_chart(add_plotly_animations(create_monte_carlo_chart(mc_results, ticker, quote.get('price', 0))), use_container_width=True)
                                     
                                     col_mc1, col_mc2, col_mc3 = st.columns(3)
                                     with col_mc1:
@@ -5222,7 +5223,7 @@ if st.session_state.show_indian_stocks:
                             with st.spinner("Forecasting with ARIMA..."):
                                 arima_results, arima_error = analyzer.arima_forecast(days=30)
                                 if arima_results:
-                                    st.plotly_chart(create_arima_chart(arima_results, analyzer.data, ticker), use_container_width=True)
+                                    st.plotly_chart(add_plotly_animations(create_arima_forecast_chart(analyzer.data, arima_results, ticker)), use_container_width=True)
                                     st.metric("30-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
                             
                             # DCF Valuation
@@ -5236,10 +5237,10 @@ if st.session_state.show_indian_stocks:
                                 with col_dcf3:
                                     terminal_growth = st.slider("Terminal Growth (%)", 0, 10, 3, key=f"terminal_{ticker}") / 100
                             
-                            dcf_result, dcf_error = analyzer.calculate_dcf_valuation(
-                                revenue_growth_rate=growth_rate if 'growth_rate' in locals() else 0.10,
+                            dcf_result, dcf_error = analyzer.dcf_valuation(
+                                growth_rate=growth_rate if 'growth_rate' in locals() else 0.08,
                                 discount_rate=discount_rate if 'discount_rate' in locals() else 0.10,
-                                terminal_growth_rate=terminal_growth if 'terminal_growth' in locals() else 0.03
+                                terminal_growth=terminal_growth if 'terminal_growth' in locals() else 0.03
                             )
                             
                             if dcf_result:
@@ -5289,8 +5290,9 @@ if st.session_state.show_indian_stocks:
                         st.error(f"Failed to fetch data for {ticker}: {error}")
     
     with indian_tab2:
-        st.subheader("🔍 Indian Stock Screener with DCF Analysis")
-        st.markdown("Analyze multiple Indian stocks at once using DCF valuation")
+        st.subheader("🔍 Batch DCF Stock Screener")
+        st.markdown("**Quick DCF screening** of multiple Indian stocks to find undervalued/overvalued opportunities")
+        st.caption("⚡ Note: For full analytics (Monte Carlo, ARIMA, GARCH), use Individual Analysis tab above")
         
         # Predefined Indian stock lists
         indian_stock_lists = {
@@ -5331,7 +5333,7 @@ if st.session_state.show_indian_stocks:
                         analyzer.returns = returns
                         
                         quote, _ = get_cached_stock_quote(ticker)
-                        dcf_result, _ = analyzer.calculate_dcf_valuation()
+                        dcf_result, _ = analyzer.dcf_valuation()
                         
                         if quote and dcf_result:
                             current_price = quote.get('price', 0)
@@ -5385,8 +5387,9 @@ if st.session_state.show_indian_stocks:
                     st.error("No results available")
     
     with indian_tab3:
-        st.subheader("📈 Build Your Indian Stock Portfolio")
-        st.markdown("Create a custom portfolio of Indian stocks and analyze diversification")
+        st.subheader("📈 Portfolio Diversification Analyzer")
+        st.markdown("**Correlation matrix** and **risk-return analysis** for custom Indian stock portfolios")
+        st.caption("⚡ Analyzes how stocks relate to each other - ideal for building diversified portfolios")
         
         portfolio_input = st.text_input(
             "Enter NSE tickers (comma-separated)",
