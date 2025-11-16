@@ -1189,6 +1189,8 @@ if 'show_financial_tools' not in st.session_state:
     st.session_state.show_financial_tools = True
 if 'show_stock_analyzer' not in st.session_state:
     st.session_state.show_stock_analyzer = True
+if 'show_indian_stocks' not in st.session_state:
+    st.session_state.show_indian_stocks = True
 if 'show_ai_chat' not in st.session_state:
     st.session_state.show_ai_chat = True
 if 'chat_messages' not in st.session_state:
@@ -2439,6 +2441,12 @@ with st.sidebar:
         "📈 Stock Analyzer",
         value=st.session_state.show_stock_analyzer,
         help="AI-powered quantitative stock analysis with Monte Carlo, ARIMA, GARCH, Black-Scholes"
+    )
+    
+    st.session_state.show_indian_stocks = st.checkbox(
+        "🇮🇳 Indian Stocks Tracker",
+        value=st.session_state.show_indian_stocks,
+        help="Dedicated section for Indian stock market analysis (NSE/BSE) with Nifty 50, Sensex, and sector-wise analysis"
     )
     
     st.session_state.show_ai_chat = st.checkbox(
@@ -5113,6 +5121,338 @@ AMZN""")
         
         elif len(tickers_to_analyze) == 0 and screener_option == "📤 Upload Custom CSV":
             st.info("👆 Upload a CSV file with stock tickers to begin analysis")
+    
+    st.markdown("---")
+
+# Indian Stocks Tracker Section
+if st.session_state.show_indian_stocks:
+    st.markdown('<div class="section-anchor" id="indianstocks"></div>', unsafe_allow_html=True)
+    st.header("🇮🇳 Indian Stock Market Analyzer")
+    st.markdown("**Comprehensive analysis of NSE/BSE stocks** with DCF valuation, Monte Carlo simulations, ARIMA forecasting, and AI-powered insights for the Indian market.")
+    
+    indian_tab1, indian_tab2, indian_tab3 = st.tabs(["📊 Stock Analysis", "🔍 Stock Screener", "📈 Portfolio Builder"])
+    
+    with indian_tab1:
+        st.subheader("Individual Indian Stock Analysis")
+        st.info("💡 **Quick Start:** Enter any Indian company name (Reliance, TCS, Infosys, HDFC Bank, etc.) or NSE ticker")
+        
+        indian_company = st.text_input(
+            "Company Name or Ticker (NSE)",
+            placeholder="e.g., Reliance, TCS, Infosys, HDFC Bank...",
+            key="indian_company_input",
+            help="Enter company name (AI will find ticker) or NSE ticker symbol"
+        )
+        
+        if st.button("🔍 Analyze Indian Stock", type="primary", key="analyze_indian"):
+            if not indian_company or not indian_company.strip():
+                st.error("❌ Please enter a company name or ticker")
+            else:
+                # Check if input already has .NS suffix
+                if indian_company.upper().endswith('.NS') or indian_company.upper().endswith('.BO'):
+                    ticker = indian_company.upper()
+                else:
+                    # Try AI lookup first
+                    ticker, message = lookup_company_ticker(indian_company)
+                    
+                    # If AI didn't find it, try adding .NS suffix
+                    if not ticker:
+                        ticker = f"{indian_company.upper()}.NS"
+                        st.info(f"🔎 Trying NSE ticker: {ticker}")
+                
+                # Fetch and analyze
+                with st.spinner(f"Analyzing {ticker}..."):
+                    success, data_df, returns, error = get_cached_stock_data(ticker, period='2y')
+                    
+                    if success and returns is not None:
+                        analyzer = StockAnalyzer(ticker)
+                        analyzer.data = data_df
+                        analyzer.returns = returns
+                        
+                        # Get quote and metrics
+                        quote, quote_error = get_cached_stock_quote(ticker)
+                        metrics, metrics_error = analyzer.calculate_metrics()
+                        
+                        if quote and metrics:
+                            st.success(f"✅ Successfully analyzed {ticker}")
+                            
+                            # Display quote card
+                            col_q1, col_q2, col_q3, col_q4 = st.columns(4)
+                            with col_q1:
+                                st.metric("Current Price", f"₹{quote.get('price', 0):.2f}", delta=quote.get('change_percent', '0%'))
+                            with col_q2:
+                                st.metric("Volume", f"{quote.get('volume', 0):,}")
+                            with col_q3:
+                                st.metric("Day High", f"₹{quote.get('day_high', 0):.2f}")
+                            with col_q4:
+                                st.metric("Day Low", f"₹{quote.get('day_low', 0):.2f}")
+                            
+                            # Price chart
+                            st.markdown("### 📈 Price History")
+                            st.plotly_chart(create_price_chart(analyzer.data, ticker), use_container_width=True)
+                            
+                            # Risk metrics
+                            st.markdown("### 📊 Risk Metrics")
+                            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                            with col_m1:
+                                st.metric("Sharpe Ratio", f"{metrics.get('sharpe_ratio', 0):.3f}")
+                            with col_m2:
+                                st.metric("Beta", f"{metrics.get('beta', 0):.3f}")
+                            with col_m3:
+                                st.metric("Volatility", f"{metrics.get('volatility', 0):.2%}")
+                            with col_m4:
+                                st.metric("Sortino Ratio", f"{metrics.get('sortino_ratio', 0):.3f}")
+                            
+                            # Monte Carlo
+                            st.markdown("### 🎲 Monte Carlo Simulation (1 Year Projection)")
+                            with st.spinner("Running 10,000 simulations..."):
+                                mc_results, mc_error = analyzer.monte_carlo_simulation(days=252)
+                                if mc_results:
+                                    st.plotly_chart(create_monte_carlo_chart(mc_results, ticker), use_container_width=True)
+                                    
+                                    col_mc1, col_mc2, col_mc3 = st.columns(3)
+                                    with col_mc1:
+                                        st.metric("Expected Price (1Y)", f"₹{mc_results.get('expected_final_price', 0):.2f}")
+                                    with col_mc2:
+                                        st.metric("95% Confidence Lower", f"₹{mc_results.get('percentile_5', 0):.2f}")
+                                    with col_mc3:
+                                        st.metric("95% Confidence Upper", f"₹{mc_results.get('percentile_95', 0):.2f}")
+                            
+                            # ARIMA Forecast
+                            st.markdown("### 📈 ARIMA Price Forecast (30 Days)")
+                            with st.spinner("Forecasting with ARIMA..."):
+                                arima_results, arima_error = analyzer.arima_forecast(days=30)
+                                if arima_results:
+                                    st.plotly_chart(create_arima_chart(arima_results, analyzer.data, ticker), use_container_width=True)
+                                    st.metric("30-Day Forecast", f"₹{arima_results['forecast'][-1]:.2f}")
+                            
+                            # DCF Valuation
+                            st.markdown("### 💰 DCF Intrinsic Valuation")
+                            with st.expander("🔧 Customize DCF Parameters", expanded=False):
+                                col_dcf1, col_dcf2, col_dcf3 = st.columns(3)
+                                with col_dcf1:
+                                    growth_rate = st.slider("Revenue Growth Rate (%)", 0, 50, 10, key=f"growth_{ticker}") / 100
+                                with col_dcf2:
+                                    discount_rate = st.slider("Discount Rate (%)", 1, 20, 10, key=f"discount_{ticker}") / 100
+                                with col_dcf3:
+                                    terminal_growth = st.slider("Terminal Growth (%)", 0, 10, 3, key=f"terminal_{ticker}") / 100
+                            
+                            dcf_result, dcf_error = analyzer.calculate_dcf_valuation(
+                                revenue_growth_rate=growth_rate if 'growth_rate' in locals() else 0.10,
+                                discount_rate=discount_rate if 'discount_rate' in locals() else 0.10,
+                                terminal_growth_rate=terminal_growth if 'terminal_growth' in locals() else 0.03
+                            )
+                            
+                            if dcf_result:
+                                intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
+                                current_price = quote.get('price', 0)
+                                
+                                col_dcf_r1, col_dcf_r2, col_dcf_r3 = st.columns(3)
+                                with col_dcf_r1:
+                                    st.metric("Current Price", f"₹{current_price:.2f}")
+                                with col_dcf_r2:
+                                    st.metric("Intrinsic Value", f"₹{intrinsic_value:.2f}")
+                                with col_dcf_r3:
+                                    upside = ((intrinsic_value - current_price) / current_price) * 100
+                                    st.metric("Upside/Downside", f"{upside:+.1f}%")
+                                
+                                if upside > 10:
+                                    st.success("💚 **UNDERVALUED** - Stock is trading below intrinsic value")
+                                elif upside < -10:
+                                    st.error("🔴 **OVERVALUED** - Stock is trading above intrinsic value")
+                                else:
+                                    st.info("🟡 **FAIRLY VALUED** - Stock is trading near intrinsic value")
+                            
+                            # AI Recommendation
+                            st.markdown("### 🤖 AI-Powered Investment Recommendation")
+                            if st.button("Get AI Analysis", key=f"ai_indian_{ticker}"):
+                                with st.spinner("AI is analyzing..."):
+                                    from services.stock_ai_analyzer import get_ai_stock_analysis
+                                    ai_analysis, ai_error = get_ai_stock_analysis(
+                                        ticker, quote, metrics, 
+                                        mc_results if mc_results else {},
+                                        arima_results if arima_results else {}
+                                    )
+                                    
+                                    if ai_analysis:
+                                        st.markdown(f"**Rating:** {ai_analysis.get('rating', 'N/A')} | **Confidence:** {ai_analysis.get('confidence', 0)}%")
+                                        st.markdown(f"**Risk Level:** {ai_analysis.get('risk_level', 'N/A')}")
+                                        st.markdown(f"**Analysis:** {ai_analysis.get('analysis', '')}")
+                                        
+                                        st.markdown("**Key Insights:**")
+                                        for insight in ai_analysis.get('key_insights', []):
+                                            st.markdown(f"- {insight}")
+                                        
+                                        st.info(f"**Recommendation:** {ai_analysis.get('recommendation', '')}")
+                        else:
+                            st.error(f"Failed to analyze {ticker}: {metrics_error or quote_error}")
+                    else:
+                        st.error(f"Failed to fetch data for {ticker}: {error}")
+    
+    with indian_tab2:
+        st.subheader("🔍 Indian Stock Screener with DCF Analysis")
+        st.markdown("Analyze multiple Indian stocks at once using DCF valuation")
+        
+        # Predefined Indian stock lists
+        indian_stock_lists = {
+            "Nifty 50 Top 15": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", 
+                               "HINDUNILVR.NS", "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "KOTAKBANK.NS",
+                               "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS", "TITAN.NS"],
+            
+            "Sensex Top 10": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
+                             "HINDUNILVR.NS", "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "KOTAKBANK.NS"],
+            
+            "IT Giants": ["TCS.NS", "INFY.NS", "WIPRO.NS", "HCLTECH.NS", "TECHM.NS", "LTI.NS"],
+            
+            "Banking Sector": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS", "INDUSINDBK.NS"],
+            
+            "Auto Sector": ["MARUTI.NS", "TATAMOTORS.NS", "M&M.NS", "BAJAJ-AUTO.NS", "HEROMOTOCO.NS"],
+            
+            "FMCG Leaders": ["HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "BRITANNIA.NS", "DABUR.NS"],
+            
+            "Pharma Sector": ["SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS", "DIVISLAB.NS", "BIOCON.NS"]
+        }
+        
+        selected_indian_list = st.selectbox("Select Indian Stock List:", list(indian_stock_lists.keys()), key="indian_list_selector")
+        indian_tickers = indian_stock_lists[selected_indian_list]
+        
+        st.info(f"📋 Will analyze: {', '.join([t.replace('.NS', '') for t in indian_tickers])}")
+        
+        if st.button("🚀 Run DCF Screener", type="primary", key="run_indian_screener"):
+            with st.spinner(f"Analyzing {len(indian_tickers)} Indian stocks..."):
+                results = []
+                progress_bar = st.progress(0)
+                
+                for idx, ticker in enumerate(indian_tickers):
+                    success, data_df, returns, error = get_cached_stock_data(ticker, period='1y')
+                    
+                    if success:
+                        analyzer = StockAnalyzer(ticker)
+                        analyzer.data = data_df
+                        analyzer.returns = returns
+                        
+                        quote, _ = get_cached_stock_quote(ticker)
+                        dcf_result, _ = analyzer.calculate_dcf_valuation()
+                        
+                        if quote and dcf_result:
+                            current_price = quote.get('price', 0)
+                            intrinsic_value = dcf_result.get('intrinsic_value_per_share', 0)
+                            upside = ((intrinsic_value - current_price) / current_price) * 100 if current_price > 0 else 0
+                            
+                            results.append({
+                                'Ticker': ticker.replace('.NS', ''),
+                                'Current Price (₹)': current_price,
+                                'Intrinsic Value (₹)': intrinsic_value,
+                                'Upside/Downside (%)': upside,
+                                'Status': 'UNDERVALUED' if upside > 10 else ('OVERVALUED' if upside < -10 else 'FAIR VALUE')
+                            })
+                    
+                    progress_bar.progress((idx + 1) / len(indian_tickers))
+                    
+                    # Rate limiting
+                    if idx < len(indian_tickers) - 1:
+                        import time
+                        time.sleep(3)
+                
+                progress_bar.empty()
+                
+                if results:
+                    st.success(f"✅ Analyzed {len(results)} stocks")
+                    
+                    df_results = pd.DataFrame(results)
+                    df_results = df_results.sort_values('Upside/Downside (%)', ascending=False)
+                    
+                    st.dataframe(df_results.style.applymap(
+                        lambda x: 'background-color: lightgreen' if x == 'UNDERVALUED' else ('background-color: lightcoral' if x == 'OVERVALUED' else ''),
+                        subset=['Status']
+                    ), use_container_width=True)
+                    
+                    # Download
+                    csv = df_results.to_csv(index=False)
+                    from datetime import datetime as dt
+                    st.download_button(
+                        "📥 Download Results",
+                        csv,
+                        f"indian_stocks_dcf_{dt.now().strftime('%Y%m%d')}.csv",
+                        "text/csv"
+                    )
+                    
+                    # Top opportunities
+                    undervalued = df_results[df_results['Status'] == 'UNDERVALUED']
+                    if len(undervalued) > 0:
+                        st.markdown("### 🎯 Top Buying Opportunities")
+                        st.dataframe(undervalued.head(5), use_container_width=True)
+                else:
+                    st.error("No results available")
+    
+    with indian_tab3:
+        st.subheader("📈 Build Your Indian Stock Portfolio")
+        st.markdown("Create a custom portfolio of Indian stocks and analyze diversification")
+        
+        portfolio_input = st.text_input(
+            "Enter NSE tickers (comma-separated)",
+            placeholder="e.g., RELIANCE.NS, TCS.NS, INFY.NS, HDFCBANK.NS",
+            key="indian_portfolio_input"
+        )
+        
+        if st.button("📊 Analyze Portfolio", type="primary", key="analyze_indian_portfolio"):
+            if portfolio_input:
+                symbols = [s.strip().upper() for s in portfolio_input.split(',')]
+                
+                # Ensure .NS suffix
+                symbols = [s if s.endswith('.NS') else f"{s}.NS" for s in symbols]
+                
+                with st.spinner(f"Analyzing {len(symbols)} stocks..."):
+                    stocks_data = []
+                    stocks_metrics = []
+                    
+                    progress_bar = st.progress(0)
+                    for i, symbol in enumerate(symbols):
+                        success, data_df, returns, error = get_cached_stock_data(symbol, period='1y')
+                        
+                        if success and returns is not None:
+                            analyzer = StockAnalyzer(symbol)
+                            analyzer.data = data_df
+                            analyzer.returns = returns
+                            metrics, _ = analyzer.calculate_metrics()
+                            
+                            if metrics:
+                                stocks_data.append({'symbol': symbol, 'returns': analyzer.returns})
+                                stocks_metrics.append({'symbol': symbol, **metrics})
+                        
+                        progress_bar.progress((i + 1) / len(symbols))
+                    
+                    progress_bar.empty()
+                    
+                    if len(stocks_data) >= 2:
+                        st.success(f"✅ Analyzed {len(stocks_data)} stocks")
+                        
+                        # Correlation matrix
+                        st.markdown("### 🔗 Correlation Matrix")
+                        st.plotly_chart(create_correlation_heatmap(stocks_data), use_container_width=True)
+                        
+                        # Risk-Return scatter
+                        st.markdown("### 📊 Risk vs Return")
+                        st.plotly_chart(create_risk_return_scatter(stocks_metrics), use_container_width=True)
+                        
+                        # AI Portfolio Insights
+                        if st.button("🤖 Get AI Portfolio Insights", key="ai_indian_portfolio"):
+                            with st.spinner("AI is analyzing your portfolio..."):
+                                from services.stock_ai_analyzer import get_ai_portfolio_insights
+                                insights, error = get_ai_portfolio_insights(stocks_metrics)
+                                
+                                if insights:
+                                    st.metric("Diversification Score", f"{insights.get('diversification_score', 0)}/100")
+                                    st.info(f"**Risk Assessment:** {insights.get('risk_assessment', '')}")
+                                    
+                                    st.markdown("**Recommendations:**")
+                                    for rec in insights.get('recommendations', []):
+                                        st.markdown(f"- {rec}")
+                                    
+                                    st.info(f"**Rebalancing Suggestion:** {insights.get('rebalancing_suggestion', '')}")
+                    else:
+                        st.error("Could not fetch enough stock data")
+            else:
+                st.warning("Please enter stock tickers")
     
     st.markdown("---")
 
