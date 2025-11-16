@@ -18,6 +18,8 @@ The application includes seven comprehensive financial calculators with real-tim
 
 A comprehensive AI-powered global stock analysis system supports all global exchanges, automatically converting company names to ticker symbols. It uses Alpha Vantage and Yahoo Finance for data and offers: Monte Carlo simulations, ARIMA forecasting, GARCH volatility, Black-Scholes pricing with Greeks, risk metrics (Sharpe, Beta, Alpha, correlation, Sortino), PCA analysis, and statistical summaries. The AI analysis engine (OpenAI GPT-4o-mini) provides stock ratings, risk assessments, and actionable insights.
 
+A dedicated **Indian Stocks Tracker** provides specialized analysis for NSE/BSE markets with three distinct tabs: (1) Individual Analysis (Full) - complete analytics suite including Monte Carlo, ARIMA, GARCH, DCF valuation, and AI recommendations for single Indian stocks, (2) Batch DCF Screener - fast DCF-based screening across 7 predefined Indian market lists (Nifty 50 Top 15, Sensex Top 10, IT Giants, Banking Sector, Auto Sector, FMCG Leaders, Pharma Sector) with undervalued/overvalued identification, and (3) Portfolio Correlation - correlation matrix and risk-return analysis for custom Indian stock portfolios. All features use NSE (.NS) tickers, display prices in ₹ (Indian Rupee), leverage the same 5-minute caching system, and include AI-powered company name lookup with automatic fallback to ticker symbols.
+
 An AI Budget Advisor analyzes spending patterns to recommend optimal budgets (Income, Expense, Investment), providing explanations and actionable tips, with a one-click application feature. AI-powered "Explain this graph" buttons provide jargon-free, actionable explanations for complex financial visualizations (Monte Carlo, ARIMA, GARCH, correlation, risk-return, PCA) using GPT-4o-mini.
 
 ### Rate Limiting & Caching Strategy
@@ -46,7 +48,8 @@ To ensure professional demonstrations even during API failures or when credits r
 ## Feature Specifications
 - **Personal Finance**: Auto-categorization, custom rules, budget tracking, subcategorization, savings goals, multi-currency, spending trends, income vs. expense comparisons, CSV/Excel export.
 - **Corporate Analysis**: Revenue trends, income comparisons, employee growth, YOY metrics, financial ratios, competitor analysis, PDF reports.
-- **Stock Analysis**: Real-time quotes, Monte Carlo, ARIMA, GARCH, Black-Scholes, risk metrics, portfolio correlation, PCA, AI buy/sell ratings, AI graph explanations, comprehensive visualizations.
+- **Global Stock Analysis**: Real-time quotes, Monte Carlo, ARIMA, GARCH, Black-Scholes, risk metrics, portfolio correlation, PCA, AI buy/sell ratings, AI graph explanations, comprehensive visualizations.
+- **Indian Stocks Tracker**: Dedicated NSE/BSE analysis with three tabs - (1) Individual Analysis: full analytics (Monte Carlo, ARIMA, GARCH, DCF, AI), (2) Batch DCF Screener: 7 predefined market lists with fast DCF screening, (3) Portfolio Correlation: diversification analysis with correlation matrix and risk-return scatter plots.
 - **General**: Customizable dashboard, chart PNG downloads, date range filtering, multi-file upload, AI financial assistant, AI budget recommendations, AI graph explanations.
 
 ## System Design Choices
