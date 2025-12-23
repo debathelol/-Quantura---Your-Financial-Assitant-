@@ -40,10 +40,6 @@ A comprehensive financial analytics application built with Streamlit that provid
 - Financial calculations and conversions
 - Powered by GPT-5-mini
 
-## 🚀 Live Demo
-
-[Add your deployed app link here]
-
 
 ## 📸 Screenshots
 ![Quantura-images-0](https://github.com/user-attachments/assets/371ba0ed-a7fd-4231-acf0-07f99f4a363e)
