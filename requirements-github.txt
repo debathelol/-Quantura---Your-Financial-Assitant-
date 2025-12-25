@@ -4,6 +4,7 @@ numpy>=2.3.4
 plotly>=6.4.0
 yfinance>=0.2.66
 openai>=2.7.1
+python-dotenv>=1.0.0
 scikit-learn>=1.7.2
 scipy>=1.16.3
 statsmodels>=0.14.5

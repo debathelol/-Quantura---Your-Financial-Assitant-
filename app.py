@@ -28,6 +28,24 @@ from ui_components.stock_charts import (
     create_correlation_heatmap, create_risk_return_scatter, create_volatility_chart,
     create_pca_chart, create_greeks_chart
 )
+
+# Load environment variables from .env file (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[ENV] Loaded environment variables from .env file")
+except ImportError:
+    print("[ENV] python-dotenv not installed, skipping .env file loading")
+except Exception as e:
+    print(f"[ENV] Error loading .env file: {str(e)}")
+
+# Load Streamlit secrets into environment variables (for Streamlit Cloud deployment)
+try:
+    if hasattr(st, 'secrets') and 'OPENAI_API_KEY' in st.secrets:
+        os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
+        print("[ENV] Loaded OPENAI_API_KEY from Streamlit secrets")
+except Exception as e:
+    print(f"[ENV] Error loading Streamlit secrets: {str(e)}")
 from ui_components.metrics import render_metric_card, render_metric_row, render_highlight_box
 from ui_components.progress import render_progress_bar, render_donut_chart, render_gauge_chart
 
