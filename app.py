@@ -5187,34 +5187,74 @@ if st.session_state.show_news_section:
 
                             for i, article in enumerate(news_data[:10]):  # Show top 10 news
                                 with st.container():
+                                    # Handle both old and new yfinance data structures
+                                    # New structure has 'content' wrapper
+                                    content = article.get('content', article)
+
+                                    # Extract title - try multiple possible keys
+                                    title = (content.get('title') or
+                                            article.get('title') or
+                                            content.get('headline') or
+                                            'No title available')
+
+                                    # Extract link - try multiple possible keys
+                                    link = (content.get('canonicalUrl', {}).get('url') or
+                                           content.get('clickThroughUrl', {}).get('url') or
+                                           article.get('link') or
+                                           content.get('url') or '#')
+
+                                    # Extract publisher
+                                    provider = content.get('provider', {})
+                                    if isinstance(provider, dict):
+                                        publisher = provider.get('displayName', 'Unknown')
+                                    else:
+                                        publisher = article.get('publisher', 'Unknown')
+
+                                    # Extract publish time
+                                    pub_time = (content.get('pubDate') or
+                                               article.get('providerPublishTime') or
+                                               content.get('publishedAt'))
+
+                                    if pub_time:
+                                        try:
+                                            if isinstance(pub_time, str):
+                                                from datetime import datetime
+                                                # Parse ISO format date string
+                                                pub_date = datetime.fromisoformat(pub_time.replace('Z', '+00:00')).strftime('%b %d, %Y %H:%M')
+                                            else:
+                                                from datetime import datetime
+                                                pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
+                                        except:
+                                            pub_date = str(pub_time)[:16] if pub_time else 'Unknown date'
+                                    else:
+                                        pub_date = 'Unknown date'
+
                                     col1, col2 = st.columns([3, 1])
 
                                     with col1:
-                                        # Title with link
-                                        title = article.get('title', 'No title')
-                                        link = article.get('link', '#')
                                         st.markdown(f"**[{title}]({link})**")
-
-                                        # Publisher and time
-                                        publisher = article.get('publisher', 'Unknown')
-                                        pub_time = article.get('providerPublishTime', 0)
-                                        if pub_time:
-                                            from datetime import datetime
-                                            pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
-                                        else:
-                                            pub_date = 'Unknown date'
-
                                         st.caption(f"📰 {publisher} • 🕐 {pub_date}")
+
+                                        # Summary if available
+                                        summary = content.get('summary', '')
+                                        if summary and len(summary) > 10:
+                                            st.caption(summary[:200] + "..." if len(summary) > 200 else summary)
 
                                     with col2:
                                         # Thumbnail if available
-                                        if article.get('thumbnail'):
-                                            thumb_url = article['thumbnail'].get('resolutions', [{}])[0].get('url')
-                                            if thumb_url:
-                                                st.image(thumb_url, width=100)
+                                        thumb = content.get('thumbnail', {})
+                                        if isinstance(thumb, dict):
+                                            resolutions = thumb.get('resolutions', [])
+                                            if resolutions and len(resolutions) > 0:
+                                                thumb_url = resolutions[0].get('url')
+                                                if thumb_url:
+                                                    try:
+                                                        st.image(thumb_url, width=100)
+                                                    except:
+                                                        pass
 
                                     # Related tickers
-                                    related = article.get('relatedTickers', [])
+                                    related = content.get('relatedTickers', article.get('relatedTickers', []))
                                     if related:
                                         st.caption(f"📈 Related: {', '.join(related[:5])}")
 
@@ -5272,19 +5312,54 @@ if st.session_state.show_news_section:
 
                         for article in news_data[:8]:
                             with st.container():
-                                title = article.get('title', 'No title')
-                                link = article.get('link', '#')
-                                publisher = article.get('publisher', 'Unknown')
-                                pub_time = article.get('providerPublishTime', 0)
+                                # Handle both old and new yfinance data structures
+                                content = article.get('content', article)
+
+                                # Extract title
+                                title = (content.get('title') or
+                                        article.get('title') or
+                                        content.get('headline') or
+                                        'No title available')
+
+                                # Extract link
+                                link = (content.get('canonicalUrl', {}).get('url') or
+                                       content.get('clickThroughUrl', {}).get('url') or
+                                       article.get('link') or
+                                       content.get('url') or '#')
+
+                                # Extract publisher
+                                provider = content.get('provider', {})
+                                if isinstance(provider, dict):
+                                    publisher = provider.get('displayName', 'Unknown')
+                                else:
+                                    publisher = article.get('publisher', 'Unknown')
+
+                                # Extract publish time
+                                pub_time = (content.get('pubDate') or
+                                           article.get('providerPublishTime') or
+                                           content.get('publishedAt'))
 
                                 if pub_time:
-                                    from datetime import datetime
-                                    pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
+                                    try:
+                                        if isinstance(pub_time, str):
+                                            from datetime import datetime
+                                            pub_date = datetime.fromisoformat(pub_time.replace('Z', '+00:00')).strftime('%b %d, %Y %H:%M')
+                                        else:
+                                            from datetime import datetime
+                                            pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
+                                    except:
+                                        pub_date = str(pub_time)[:16] if pub_time else 'Unknown date'
                                 else:
                                     pub_date = 'Unknown date'
 
                                 st.markdown(f"**[{title}]({link})**")
                                 st.caption(f"📰 {publisher} • 🕐 {pub_date}")
+
+                                # Summary if available
+                                summary = content.get('summary', '')
+                                if summary and len(summary) > 10:
+                                    st.caption(summary[:150] + "..." if len(summary) > 150 else summary)
+
                                 st.divider()
                     else:
                         st.warning("No market news available at the moment.")
