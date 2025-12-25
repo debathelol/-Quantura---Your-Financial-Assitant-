@@ -35,30 +35,62 @@ from ui_components.progress import render_progress_bar, render_donut_chart, rend
 # CACHED STOCK DATA FUNCTIONS - Prevents Yahoo Finance Rate Limiting
 # ============================================================================
 
-@st.cache_data(ttl=300, show_spinner=False)
 def get_cached_stock_data(ticker, period='2y'):
     """
-    Fetch and cache stock price history for 5 minutes.
-    Prevents repeated API calls for the same stock.
-    
+    Fetch stock price history with caching for successful results only.
+    Errors are not cached to allow immediate retry.
+
     Returns: (success, data_df, returns_series, error_message)
     """
+    # Try to get from cache first
+    cache_key = f"stock_data_{ticker}_{period}"
+    if cache_key in st.session_state:
+        cached = st.session_state[cache_key]
+        # Check if cache is still valid (5 minutes)
+        if (datetime.now() - cached['timestamp']).seconds < 300:
+            return True, cached['data'], cached['returns'], None
+
+    # Fetch fresh data
     analyzer = StockAnalyzer(ticker)
     success, error = analyzer.fetch_data_yfinance(period=period)
-    
+
     if success and analyzer.data is not None:
+        # Only cache successful results
+        st.session_state[cache_key] = {
+            'data': analyzer.data.copy(),
+            'returns': analyzer.returns.copy() if analyzer.returns is not None else None,
+            'timestamp': datetime.now()
+        }
         return True, analyzer.data.copy(), analyzer.returns.copy() if analyzer.returns is not None else None, None
+
+    # Don't cache errors - allow immediate retry
     return False, None, None, error
 
-@st.cache_data(ttl=300, show_spinner=False)  
 def get_cached_stock_quote(ticker):
-    """Cache stock quote data for 5 minutes"""
+    """Cache stock quote data for 5 minutes - only caches successful results"""
+    # Try to get from cache first
+    cache_key = f"stock_quote_{ticker}"
+    if cache_key in st.session_state:
+        cached = st.session_state[cache_key]
+        # Check if cache is still valid (5 minutes)
+        if (datetime.now() - cached['timestamp']).seconds < 300:
+            return cached['quote'], None
+
+    # Fetch fresh data
     analyzer = StockAnalyzer(ticker)
     success, error = analyzer.fetch_data_yfinance(period='5d')
-    
+
     if success:
         quote, quote_error = analyzer.get_quote()
+        if quote and not quote_error:
+            # Only cache successful results
+            st.session_state[cache_key] = {
+                'quote': quote,
+                'timestamp': datetime.now()
+            }
         return quote, quote_error
+
+    # Don't cache errors - allow immediate retry
     return None, error
 
 def get_db_connection():
