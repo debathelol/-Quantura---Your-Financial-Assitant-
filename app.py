@@ -827,11 +827,24 @@ def generate_report(metrics, monthly, df):
 
 # AI Chatbot Functions
 def init_openai_client():
-    """Initialize OpenAI client with Replit AI Integrations"""
-    return OpenAI(
-        api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
-        base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
-    )
+    """Initialize OpenAI client - works on both Replit and with standard OpenAI API keys"""
+    try:
+        # Check for API key in both Replit and standard formats
+        api_key = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return None
+
+        base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+
+        if base_url:
+            # Replit integration
+            return OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            # Standard OpenAI or Streamlit Cloud
+            return OpenAI(api_key=api_key)
+    except Exception as e:
+        print(f"[AI Chat] Error initializing OpenAI client: {str(e)}")
+        return None
 
 def get_financial_context(df=None):
     """Get financial data context for AI chatbot"""
@@ -894,7 +907,16 @@ def get_ai_budget_recommendations(df):
             "explanation": "⚠️ **Demo Mode** - Based on typical spending patterns, we recommend allocating 50% to essential expenses, 30% to discretionary spending, and 20% to savings/investments. This balanced approach helps build wealth while maintaining lifestyle.",
             "tip": "⚠️ **Demo Mode** - Start by tracking every expense for 30 days to understand where your money actually goes. Small daily expenses often add up to surprisingly large amounts!"
         }, None
-    
+
+    # Check if client initialization returned None (no API key)
+    if client is None:
+        print(f"[DEMO MODE] No API key configured, using demo budget data")
+        return {
+            "budgets": {"Income": 5000, "Expense": 3500, "Investment": 1000},
+            "explanation": "⚠️ **Demo Mode** - Based on typical spending patterns, we recommend allocating 50% to essential expenses, 30% to discretionary spending, and 20% to savings/investments. This balanced approach helps build wealth while maintaining lifestyle.",
+            "tip": "⚠️ **Demo Mode** - Start by tracking every expense for 30 days to understand where your money actually goes. Small daily expenses often add up to surprisingly large amounts!"
+        }, None
+
     if df is None or df.empty:
         return None, "No transaction data available. Please upload your financial data first."
     
@@ -988,7 +1010,7 @@ def chat_with_ai(user_message, context, chat_history):
     except Exception as e:
         # Fallback to demo mode when client initialization fails
         print(f"[DEMO MODE] OpenAI client init failed, using demo chatbot response: {str(e)}")
-        return """⚠️ **Demo Mode** - I'm here to help with your financial questions! 
+        return """⚠️ **Demo Mode** - I'm here to help with your financial questions!
 
 While the AI service is temporarily unavailable, here are some general financial tips:
 
@@ -998,7 +1020,21 @@ While the AI service is temporarily unavailable, here are some general financial
 - **Diversify your portfolio**: Don't put all your eggs in one basket
 
 Please try your question again in a moment, or explore the other features of Quantura to analyze your finances!"""
-    
+
+    # Check if client initialization returned None (no API key)
+    if client is None:
+        print(f"[DEMO MODE] No API key configured, using demo chatbot response")
+        return """⚠️ **Demo Mode** - I'm here to help with your financial questions!
+
+While the AI service is temporarily unavailable, here are some general financial tips:
+
+- **Track your spending**: Understanding where your money goes is the first step to financial wellness
+- **Build an emergency fund**: Aim for 3-6 months of expenses in a savings account
+- **Invest for the long term**: Time in the market beats timing the market
+- **Diversify your portfolio**: Don't put all your eggs in one basket
+
+Please try your question again in a moment, or explore the other features of Quantura to analyze your finances!"""
+
     system_prompt = f"""You are a supportive financial coach for Quantura, helping users build wealth and make smart money decisions.
 
 Your coaching style:
@@ -1075,7 +1111,13 @@ def explain_graph_with_ai(graph_type, data_context):
         print(f"[DEMO MODE] OpenAI client init failed, using demo graph explanation: {str(e)}")
         from services.stock_ai_analyzer import get_demo_graph_explanation
         return get_demo_graph_explanation(graph_type)
-    
+
+    # Check if client initialization returned None (no API key)
+    if client is None:
+        print(f"[DEMO MODE] No API key configured, using demo graph explanation")
+        from services.stock_ai_analyzer import get_demo_graph_explanation
+        return get_demo_graph_explanation(graph_type)
+
     # Create context-specific prompts based on graph type
     prompts = {
         "correlation_matrix": f"""Explain this stock correlation matrix in simple, everyday language:
