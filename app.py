@@ -5177,85 +5177,77 @@ if st.session_state.show_news_section:
         st.session_state.news_results = news_data
         st.session_state.news_searched_ticker = ticker_symbol.upper()
 
+    def extract_nested_value(data, *keys):
+        """Safely extract nested values from dict"""
+        for key in keys:
+            if isinstance(data, dict):
+                data = data.get(key)
+            else:
+                return None
+        return data
+
     def display_news_articles(news_data, ticker_symbol, max_articles=10):
         """Display news articles in a formatted way"""
-        if news_data and len(news_data) > 0:
-            st.success(f"Found {len(news_data)} news articles for {ticker_symbol}")
-
-            for article in news_data[:max_articles]:
-                with st.container():
-                    # Handle both old and new yfinance data structures
-                    content = article.get('content', article)
-
-                    # Extract title
-                    title = (content.get('title') or
-                            article.get('title') or
-                            content.get('headline') or
-                            'No title available')
-
-                    # Extract link
-                    link = (content.get('canonicalUrl', {}).get('url') or
-                           content.get('clickThroughUrl', {}).get('url') or
-                           article.get('link') or
-                           content.get('url') or '#')
-
-                    # Extract publisher
-                    provider = content.get('provider', {})
-                    if isinstance(provider, dict):
-                        publisher = provider.get('displayName', 'Unknown')
-                    else:
-                        publisher = article.get('publisher', 'Unknown')
-
-                    # Extract publish time
-                    pub_time = (content.get('pubDate') or
-                               article.get('providerPublishTime') or
-                               content.get('publishedAt'))
-
-                    if pub_time:
-                        try:
-                            if isinstance(pub_time, str):
-                                from datetime import datetime
-                                pub_date = datetime.fromisoformat(pub_time.replace('Z', '+00:00')).strftime('%b %d, %Y %H:%M')
-                            else:
-                                from datetime import datetime
-                                pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
-                        except:
-                            pub_date = str(pub_time)[:16] if pub_time else 'Unknown date'
-                    else:
-                        pub_date = 'Unknown date'
-
-                    col1, col2 = st.columns([3, 1])
-
-                    with col1:
-                        st.markdown(f"**[{title}]({link})**")
-                        st.caption(f"📰 {publisher} • 🕐 {pub_date}")
-
-                        # Summary if available
-                        summary = content.get('summary', '')
-                        if summary and len(summary) > 10:
-                            st.caption(summary[:200] + "..." if len(summary) > 200 else summary)
-
-                    with col2:
-                        # Thumbnail if available
-                        thumb = content.get('thumbnail', {})
-                        if isinstance(thumb, dict):
-                            resolutions = thumb.get('resolutions', [])
-                            if resolutions and len(resolutions) > 0:
-                                thumb_url = resolutions[0].get('url')
-                                if thumb_url:
-                                    try:
-                                        st.image(thumb_url, width=100)
-                                    except:
-                                        pass
-
-                    # Related tickers
-                    related = content.get('relatedTickers', article.get('relatedTickers', []))
-                    if related:
-                        st.caption(f"📈 Related: {', '.join(related[:5])}")
-
-                    st.divider()
-        else:
+        if not news_data or len(news_data) == 0:
             st.warning(f"No news found for {ticker_symbol}. Try a different ticker.")
+            return
+
+        st.success(f"Found {len(news_data)} news articles for {ticker_symbol}")
+
+        for article in news_data[:max_articles]:
+            # Deep extraction - handle any nested structure
+            # Try to find title at any level
+            title = None
+            link = None
+            publisher = None
+            pub_date = None
+
+            # Search through all possible paths for title
+            if isinstance(article, dict):
+                # Direct keys
+                title = article.get('title')
+                link = article.get('link') or article.get('url')
+                publisher = article.get('publisher')
+                pub_time = article.get('providerPublishTime')
+
+                # Nested in 'content'
+                content = article.get('content', {})
+                if isinstance(content, dict):
+                    title = title or content.get('title') or content.get('headline')
+                    publisher = publisher or extract_nested_value(content, 'provider', 'displayName')
+                    pub_time = pub_time or content.get('pubDate') or content.get('publishedAt')
+                    link = link or extract_nested_value(content, 'canonicalUrl', 'url')
+                    link = link or extract_nested_value(content, 'clickThroughUrl', 'url')
+
+            # Fallback title
+            if not title:
+                title = str(article)[:100] if article else "News article"
+
+            # Format publish time
+            if pub_time:
+                try:
+                    if isinstance(pub_time, (int, float)):
+                        from datetime import datetime
+                        pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
+                    elif isinstance(pub_time, str):
+                        from datetime import datetime
+                        pub_date = datetime.fromisoformat(pub_time.replace('Z', '+00:00')).strftime('%b %d, %Y %H:%M')
+                    else:
+                        pub_date = str(pub_time)[:20]
+                except:
+                    pub_date = "Recent"
+            else:
+                pub_date = "Recent"
+
+            # Display the article
+            with st.container():
+                if link and link != '#':
+                    st.markdown(f"**[{title}]({link})**")
+                else:
+                    st.markdown(f"**{title}**")
+
+                st.caption(f"📰 {publisher or 'News'} • 🕐 {pub_date}")
+                st.divider()
 
     # News source selection
     news_tab1, news_tab2 = st.tabs(["🔍 Stock-Specific News", "📊 Market Overview"])
@@ -5309,90 +5301,31 @@ if st.session_state.show_news_section:
         st.subheader("Major Market Indices News")
         st.markdown("Get the latest news for major market indices")
 
-        market_indices = {
-            "S&P 500": "^GSPC",
-            "Dow Jones": "^DJI",
-            "NASDAQ": "^IXIC",
-            "Russell 2000": "^RUT"
+        # Market index proxies (ETFs that track indices)
+        market_options = {
+            "S&P 500 (SPY)": "SPY",
+            "Dow Jones (DIA)": "DIA",
+            "NASDAQ (QQQ)": "QQQ",
+            "Russell 2000 (IWM)": "IWM"
         }
 
-        selected_index = st.selectbox("Select Index", list(market_indices.keys()))
+        selected_index = st.selectbox("Select Index", list(market_options.keys()))
 
         if st.button("📊 Get Market News", type="primary", key="get_market_news_btn"):
-            index_ticker = market_indices[selected_index]
+            proxy = market_options[selected_index]
             with st.spinner(f"Fetching {selected_index} news..."):
                 try:
-                    import yfinance as yf
-                    # For indices, use SPY as proxy for S&P 500 news (indices don't always have news)
-                    proxy_tickers = {
-                        "^GSPC": "SPY",
-                        "^DJI": "DIA",
-                        "^IXIC": "QQQ",
-                        "^RUT": "IWM"
-                    }
-                    proxy = proxy_tickers.get(index_ticker, "SPY")
-                    ticker_obj = yf.Ticker(proxy)
-                    news_data = ticker_obj.news
-
-                    if news_data and len(news_data) > 0:
-                        st.success(f"Found {len(news_data)} market news articles")
-
-                        for article in news_data[:8]:
-                            with st.container():
-                                # Handle both old and new yfinance data structures
-                                content = article.get('content', article)
-
-                                # Extract title
-                                title = (content.get('title') or
-                                        article.get('title') or
-                                        content.get('headline') or
-                                        'No title available')
-
-                                # Extract link
-                                link = (content.get('canonicalUrl', {}).get('url') or
-                                       content.get('clickThroughUrl', {}).get('url') or
-                                       article.get('link') or
-                                       content.get('url') or '#')
-
-                                # Extract publisher
-                                provider = content.get('provider', {})
-                                if isinstance(provider, dict):
-                                    publisher = provider.get('displayName', 'Unknown')
-                                else:
-                                    publisher = article.get('publisher', 'Unknown')
-
-                                # Extract publish time
-                                pub_time = (content.get('pubDate') or
-                                           article.get('providerPublishTime') or
-                                           content.get('publishedAt'))
-
-                                if pub_time:
-                                    try:
-                                        if isinstance(pub_time, str):
-                                            from datetime import datetime
-                                            pub_date = datetime.fromisoformat(pub_time.replace('Z', '+00:00')).strftime('%b %d, %Y %H:%M')
-                                        else:
-                                            from datetime import datetime
-                                            pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
-                                    except:
-                                        pub_date = str(pub_time)[:16] if pub_time else 'Unknown date'
-                                else:
-                                    pub_date = 'Unknown date'
-
-                                st.markdown(f"**[{title}]({link})**")
-                                st.caption(f"📰 {publisher} • 🕐 {pub_date}")
-
-                                # Summary if available
-                                summary = content.get('summary', '')
-                                if summary and len(summary) > 10:
-                                    st.caption(summary[:150] + "..." if len(summary) > 150 else summary)
-
-                                st.divider()
-                    else:
-                        st.warning("No market news available at the moment.")
-
+                    fetch_news_for_ticker(proxy)
                 except Exception as e:
                     st.error(f"Error fetching market news: {str(e)}")
+
+        # Display market news results
+        if st.session_state.news_results and st.session_state.news_searched_ticker in ["SPY", "DIA", "QQQ", "IWM"]:
+            display_news_articles(
+                st.session_state.news_results,
+                st.session_state.news_searched_ticker,
+                max_articles=8
+            )
 
         # Sector news shortcuts
         st.markdown("---")
@@ -5414,9 +5347,8 @@ if st.session_state.show_news_section:
                         except Exception as e:
                             st.error(f"Error: {str(e)}")
 
-        # Display sector results if from Market Overview tab
+        # Display sector results
         if st.session_state.news_results and st.session_state.news_searched_ticker in ["XLK", "XLF", "XLV", "XLE"]:
-            st.markdown("---")
             display_news_articles(
                 st.session_state.news_results,
                 st.session_state.news_searched_ticker,
