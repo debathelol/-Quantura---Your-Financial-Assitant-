@@ -35,62 +35,30 @@ from ui_components.progress import render_progress_bar, render_donut_chart, rend
 # CACHED STOCK DATA FUNCTIONS - Prevents Yahoo Finance Rate Limiting
 # ============================================================================
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_cached_stock_data(ticker, period='2y'):
     """
-    Fetch stock price history with caching for successful results only.
-    Errors are not cached to allow immediate retry.
+    Fetch and cache stock price history for 5 minutes.
+    Prevents repeated API calls for the same stock.
 
     Returns: (success, data_df, returns_series, error_message)
     """
-    # Try to get from cache first
-    cache_key = f"stock_data_{ticker}_{period}"
-    if cache_key in st.session_state:
-        cached = st.session_state[cache_key]
-        # Check if cache is still valid (5 minutes)
-        if (datetime.now() - cached['timestamp']).seconds < 300:
-            return True, cached['data'], cached['returns'], None
-
-    # Fetch fresh data
     analyzer = StockAnalyzer(ticker)
     success, error = analyzer.fetch_data_yfinance(period=period)
 
     if success and analyzer.data is not None:
-        # Only cache successful results
-        st.session_state[cache_key] = {
-            'data': analyzer.data.copy(),
-            'returns': analyzer.returns.copy() if analyzer.returns is not None else None,
-            'timestamp': datetime.now()
-        }
         return True, analyzer.data.copy(), analyzer.returns.copy() if analyzer.returns is not None else None, None
-
-    # Don't cache errors - allow immediate retry
     return False, None, None, error
 
+@st.cache_data(ttl=300, show_spinner=False)
 def get_cached_stock_quote(ticker):
-    """Cache stock quote data for 5 minutes - only caches successful results"""
-    # Try to get from cache first
-    cache_key = f"stock_quote_{ticker}"
-    if cache_key in st.session_state:
-        cached = st.session_state[cache_key]
-        # Check if cache is still valid (5 minutes)
-        if (datetime.now() - cached['timestamp']).seconds < 300:
-            return cached['quote'], None
-
-    # Fetch fresh data
+    """Cache stock quote data for 5 minutes"""
     analyzer = StockAnalyzer(ticker)
     success, error = analyzer.fetch_data_yfinance(period='5d')
 
     if success:
         quote, quote_error = analyzer.get_quote()
-        if quote and not quote_error:
-            # Only cache successful results
-            st.session_state[cache_key] = {
-                'quote': quote,
-                'timestamp': datetime.now()
-            }
         return quote, quote_error
-
-    # Don't cache errors - allow immediate retry
     return None, error
 
 def get_db_connection():
@@ -1221,8 +1189,6 @@ if 'show_financial_tools' not in st.session_state:
     st.session_state.show_financial_tools = True
 if 'show_stock_analyzer' not in st.session_state:
     st.session_state.show_stock_analyzer = True
-if 'show_news_section' not in st.session_state:
-    st.session_state.show_news_section = True
 if 'show_ai_chat' not in st.session_state:
     st.session_state.show_ai_chat = True
 if 'chat_messages' not in st.session_state:
@@ -2473,12 +2439,6 @@ with st.sidebar:
         "📈 Stock Analyzer",
         value=st.session_state.show_stock_analyzer,
         help="AI-powered quantitative stock analysis with Monte Carlo, ARIMA, GARCH, Black-Scholes"
-    )
-
-    st.session_state.show_news_section = st.checkbox(
-        "📰 Financial News",
-        value=st.session_state.show_news_section,
-        help="Latest financial news and market updates"
     )
 
     st.session_state.show_ai_chat = st.checkbox(
@@ -5154,161 +5114,6 @@ AMZN""")
         elif len(tickers_to_analyze) == 0 and screener_option == "📤 Upload Custom CSV":
             st.info("👆 Upload a CSV file with stock tickers to begin analysis")
     
-    st.markdown("---")
-
-# 📰 Financial News Section
-if st.session_state.show_news_section:
-    st.markdown('<div class="section-anchor" id="news"></div>', unsafe_allow_html=True)
-    st.header("📰 Financial News")
-    st.markdown("**Stay updated with the latest market news and stock-specific updates**")
-
-    # News source selection
-    news_tab1, news_tab2 = st.tabs(["🔍 Stock-Specific News", "📊 Market Overview"])
-
-    with news_tab1:
-        st.subheader("Search News by Stock")
-        news_ticker = st.text_input(
-            "Enter Stock Ticker",
-            placeholder="e.g., AAPL, TSLA, MSFT, GOOGL",
-            help="Enter a stock ticker symbol to get the latest news",
-            key="news_ticker_input"
-        )
-
-        if st.button("🔍 Get News", type="primary", key="get_news_btn"):
-            if news_ticker:
-                with st.spinner(f"Fetching news for {news_ticker.upper()}..."):
-                    try:
-                        import yfinance as yf
-                        ticker_obj = yf.Ticker(news_ticker.upper())
-                        news_data = ticker_obj.news
-
-                        if news_data and len(news_data) > 0:
-                            st.success(f"Found {len(news_data)} news articles for {news_ticker.upper()}")
-
-                            for i, article in enumerate(news_data[:10]):  # Show top 10 news
-                                with st.container():
-                                    col1, col2 = st.columns([3, 1])
-
-                                    with col1:
-                                        # Title with link
-                                        title = article.get('title', 'No title')
-                                        link = article.get('link', '#')
-                                        st.markdown(f"**[{title}]({link})**")
-
-                                        # Publisher and time
-                                        publisher = article.get('publisher', 'Unknown')
-                                        pub_time = article.get('providerPublishTime', 0)
-                                        if pub_time:
-                                            from datetime import datetime
-                                            pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
-                                        else:
-                                            pub_date = 'Unknown date'
-
-                                        st.caption(f"📰 {publisher} • 🕐 {pub_date}")
-
-                                    with col2:
-                                        # Thumbnail if available
-                                        if article.get('thumbnail'):
-                                            thumb_url = article['thumbnail'].get('resolutions', [{}])[0].get('url')
-                                            if thumb_url:
-                                                st.image(thumb_url, width=100)
-
-                                    # Related tickers
-                                    related = article.get('relatedTickers', [])
-                                    if related:
-                                        st.caption(f"📈 Related: {', '.join(related[:5])}")
-
-                                    st.divider()
-                        else:
-                            st.warning(f"No news found for {news_ticker.upper()}. Try a different ticker.")
-
-                    except Exception as e:
-                        st.error(f"Error fetching news: {str(e)}")
-            else:
-                st.warning("Please enter a stock ticker symbol")
-
-        # Quick access buttons for popular stocks
-        st.markdown("**Quick Access:**")
-        quick_cols = st.columns(6)
-        quick_tickers = ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN", "NVDA"]
-
-        for i, ticker in enumerate(quick_tickers):
-            with quick_cols[i]:
-                if st.button(ticker, key=f"quick_news_{ticker}"):
-                    st.session_state.news_ticker_input = ticker
-                    st.rerun()
-
-    with news_tab2:
-        st.subheader("Major Market Indices News")
-        st.markdown("Get the latest news for major market indices")
-
-        market_indices = {
-            "S&P 500": "^GSPC",
-            "Dow Jones": "^DJI",
-            "NASDAQ": "^IXIC",
-            "Russell 2000": "^RUT"
-        }
-
-        selected_index = st.selectbox("Select Index", list(market_indices.keys()))
-
-        if st.button("📊 Get Market News", type="primary", key="get_market_news_btn"):
-            index_ticker = market_indices[selected_index]
-            with st.spinner(f"Fetching {selected_index} news..."):
-                try:
-                    import yfinance as yf
-                    # For indices, use SPY as proxy for S&P 500 news (indices don't always have news)
-                    proxy_tickers = {
-                        "^GSPC": "SPY",
-                        "^DJI": "DIA",
-                        "^IXIC": "QQQ",
-                        "^RUT": "IWM"
-                    }
-                    proxy = proxy_tickers.get(index_ticker, "SPY")
-                    ticker_obj = yf.Ticker(proxy)
-                    news_data = ticker_obj.news
-
-                    if news_data and len(news_data) > 0:
-                        st.success(f"Found {len(news_data)} market news articles")
-
-                        for article in news_data[:8]:
-                            with st.container():
-                                title = article.get('title', 'No title')
-                                link = article.get('link', '#')
-                                publisher = article.get('publisher', 'Unknown')
-                                pub_time = article.get('providerPublishTime', 0)
-
-                                if pub_time:
-                                    from datetime import datetime
-                                    pub_date = datetime.fromtimestamp(pub_time).strftime('%b %d, %Y %H:%M')
-                                else:
-                                    pub_date = 'Unknown date'
-
-                                st.markdown(f"**[{title}]({link})**")
-                                st.caption(f"📰 {publisher} • 🕐 {pub_date}")
-                                st.divider()
-                    else:
-                        st.warning("No market news available at the moment.")
-
-                except Exception as e:
-                    st.error(f"Error fetching market news: {str(e)}")
-
-        # Sector news shortcuts
-        st.markdown("---")
-        st.markdown("**Sector ETF News:**")
-        sector_cols = st.columns(4)
-        sectors = {
-            "Tech": "XLK",
-            "Finance": "XLF",
-            "Healthcare": "XLV",
-            "Energy": "XLE"
-        }
-
-        for i, (sector, etf) in enumerate(sectors.items()):
-            with sector_cols[i]:
-                if st.button(f"{sector}", key=f"sector_news_{etf}"):
-                    st.session_state.news_ticker_input = etf
-                    st.rerun()
-
     st.markdown("---")
 
 # AI Chat Section
