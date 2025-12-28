@@ -3,12 +3,23 @@ import requests
 from openai import OpenAI
 
 def init_openai_client():
-    """Initialize OpenAI client using Replit AI Integrations"""
+    """Initialize OpenAI client - works on both Replit and with standard OpenAI API keys"""
     try:
-        client = OpenAI(
-            api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY"),
-            base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
-        )
+        # Check for API key in both Replit and standard formats
+        api_key = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            print(f"[AI Lookup] No API key found in environment variables")
+            return None
+
+        base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+
+        if base_url:
+            # Replit integration
+            client = OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            # Standard OpenAI or Streamlit Cloud
+            client = OpenAI(api_key=api_key)
+
         return client
     except Exception as e:
         print(f"[AI Lookup] Error initializing OpenAI client: {str(e)}")
