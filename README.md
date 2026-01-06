@@ -210,7 +210,7 @@ This financial analytics dashboard was created as a school project to demonstrat
 
 ## 📧 Contact
 
-debarghya47@gmail.com
+debarghyapati47@gmail.com
 
 
 
