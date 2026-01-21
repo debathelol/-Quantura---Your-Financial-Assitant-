@@ -38,7 +38,7 @@ A comprehensive financial analytics application built with Streamlit that provid
 - Ask questions about your finances
 - Get personalized budgeting advice
 - Financial calculations and conversions
-- Powered by GPT-5-mini
+- Powered by Claude
 
 
 ## 📸 Screenshots
