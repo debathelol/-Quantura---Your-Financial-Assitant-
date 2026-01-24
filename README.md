@@ -2,11 +2,7 @@
 
 **Financial analytics built on a simple premise: what if "irrational" behavior is actually optimal under constraints we refuse to see?**
 
-[![Stars](https://img.shields.io/github/stars/debathelol/Quantura-Research?style=flat-square)](https://github.com/debathelol/Quantura-Research/stargazers)
-[![Forks](https://img.shields.io/github/forks/debathelol/Quantura-Research?style=flat-square)](https://github.com/debathelol/Quantura-Research/network/members)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
----
 
 ## The Story
 
