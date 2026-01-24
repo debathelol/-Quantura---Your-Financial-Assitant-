@@ -24,7 +24,7 @@ That insight became a research question. The research question became a paper.
 
 ## Research: When Algorithms Learn Humility
 
-**📄 [Read the full paper →](link-to-paper)**
+**📄 [Read the full paper →](https://drive.google.com/file/d/1y13nxiGvTUIlEy2Ptgbmt6tECafYyjIl/view?usp=sharing)**
 
 I applied Maximum Entropy Inverse Reinforcement Learning to infer hidden reward functions behind decisions conventionally labelled "irrational." Instead of imposing external objectives and calling deviations errors, the framework—**Humbler**—recovers the constraints that make observed behaviour optimal.
 
@@ -82,12 +82,17 @@ Quantura is also a working financial analytics application—the testing ground 
 - Natural language financial queries
 - Powered by Claude API
 
-<details>
-<summary>Screenshots</summary>
+### Platform Preview
 
-![Quantura-images-0](https://github.com/user-attachments/assets/371ba0ed-a7fd-4231-acf0-07f99f4a363e)
-![Quantura-images-1](https://github.com/user-attachments/assets/470d1435-67c1-4e21-802e-a485cd3f54af)
-![Quantura-images-2](https://github.com/user-attachments/assets/d3f288d9-5ba4-472c-9935-6ec7bc867b08)
+![Dashboard](https://github.com/user-attachments/assets/371ba0ed-a7fd-4231-acf0-07f99f4a363e)
+
+![Stock Analysis](https://github.com/user-attachments/assets/470d1435-67c1-4e21-802e-a485cd3f54af)
+
+![Portfolio Analytics](https://github.com/user-attachments/assets/d3f288d9-5ba4-472c-9935-6ec7bc867b08)
+
+<details>
+<summary>More screenshots</summary>
+
 ![Quantura-images-3](https://github.com/user-attachments/assets/b3a8be96-ed2d-42a9-82d6-de630eadfae2)
 ![Quantura-images-4](https://github.com/user-attachments/assets/fc10ac23-93f0-4597-ba92-32e8b9bdccc4)
 ![Quantura-images-5](https://github.com/user-attachments/assets/1bd561db-5a10-4372-889e-f131c602ae3f)
