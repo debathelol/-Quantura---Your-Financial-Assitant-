@@ -24,7 +24,6 @@ An AI Budget Advisor analyzes spending patterns to recommend optimal budgets (In
 To prevent Yahoo Finance API rate limiting, the application implements a comprehensive caching system:
 - **Data Caching**: Stock price data and returns are cached for 5 minutes (300 seconds) using Streamlit's `@st.cache_data` decorator
 - **Cache Coverage**: All stock data fetching locations (single stock analysis, portfolio analysis, advanced analytics, batch DCF screener) use cached helpers
-- **Rate Limiting Protection**: Batch stock screener includes 3-second delays between ticker requests, combined with caching to minimize API calls
 - **Performance Benefits**: Analyzing the same stock multiple times within 5 minutes uses cached data (no additional API calls), providing instant results and preventing rate limit errors
 - **Note**: Failed requests are also cached for 5 minutes to prevent repeated failed API calls
 

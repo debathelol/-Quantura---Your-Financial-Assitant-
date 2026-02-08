@@ -117,6 +117,17 @@ quantura/
 
 ---
 
+## 📸 Screenshots
+![Quantura-images-0](https://github.com/user-attachments/assets/371ba0ed-a7fd-4231-acf0-07f99f4a363e)
+![Quantura-images-1](https://github.com/user-attachments/assets/470d1435-67c1-4e21-802e-a485cd3f54af)
+![Quantura-images-2](https://github.com/user-attachments/assets/d3f288d9-5ba4-472c-9935-6ec7bc867b08)
+![Quantura-images-3](https://github.com/user-attachments/assets/b3a8be96-ed2d-42a9-82d6-de630eadfae2)
+![Quantura-images-4](https://github.com/user-attachments/assets/fc10ac23-93f0-4597-ba92-32e8b9bdccc4)
+![Quantura-images-6](https://github.com/user-attachments/assets/9d8bf428-fd1d-4b44-9796-68bbde9ff397)
+![Quantura-images-9](https://github.com/user-attachments/assets/eec80923-7716-4154-9ac8-9c8ecc9bf038)
+
+---
+
 ## 📊 Impact & Scale
 
 - **6,500+ lines** of production Python code

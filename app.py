@@ -5395,11 +5395,6 @@ if st.session_state.show_indian_stocks:
                             })
                     
                     progress_bar.progress((idx + 1) / len(indian_tickers))
-                    
-                    # Rate limiting
-                    if idx < len(indian_tickers) - 1:
-                        import time
-                        time.sleep(3)
                 
                 progress_bar.empty()
                 
