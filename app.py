@@ -79,6 +79,77 @@ def get_cached_stock_quote(ticker):
         return quote, quote_error
     return None, error
 
+ANNUALIZATION_DAYS = 252
+MAX_VOLATILITY = 0.6
+MAX_DOWNSIDE_VOL = 0.4
+
+def clamp_score(value, min_value=0.0, max_value=100.0):
+    """Clamp a numeric score to an inclusive min/max range."""
+    return max(min_value, min(max_value, value))
+
+def calculate_max_drawdown(returns_series):
+    """Calculate max drawdown from a returns series."""
+    if returns_series is None or returns_series.empty:
+        return 0.0
+    sanitized_returns = returns_series.dropna()
+    if sanitized_returns.empty:
+        return 0.0
+    cumulative = (1 + sanitized_returns).cumprod()
+    running_max = cumulative.cummax()
+    drawdowns = (cumulative / running_max) - 1
+    return abs(drawdowns.min())
+
+def infer_constraints_from_returns(
+    returns_series,
+    risk_profile,
+    liquidity_months,
+    max_drawdown_pct,
+    horizon_years
+):
+    """Infer constraint scores from historical returns and user assumptions."""
+    if returns_series is None or returns_series.empty:
+        return None
+
+    sanitized_returns = returns_series.dropna()
+    if sanitized_returns.empty:
+        return None
+
+    volatility = np.sqrt(ANNUALIZATION_DAYS) * sanitized_returns.std(ddof=1)
+    downside_returns = sanitized_returns[sanitized_returns < 0]
+    downside_vol = np.sqrt(ANNUALIZATION_DAYS) * downside_returns.std(ddof=1) if len(downside_returns) > 1 else 0.0
+    negative_share = (sanitized_returns < 0).mean()
+    max_drawdown = calculate_max_drawdown(sanitized_returns)
+
+    risk_profile_map = {
+        "Conservative": 0.3,
+        "Moderate": 0.6,
+        "Aggressive": 0.85
+    }
+    profile_score = risk_profile_map.get(risk_profile, 0.6)
+    volatility_score = 1 - min(volatility / MAX_VOLATILITY, 1)
+
+    risk_tolerance = clamp_score((profile_score * 0.6 + volatility_score * 0.4) * 100)
+    liquidity_need = clamp_score((liquidity_months / 12) * 100)
+
+    max_drawdown_limit = max_drawdown_pct / 100
+    drawdown_constraint = clamp_score((max_drawdown / max_drawdown_limit) * 100) if max_drawdown_limit > 0 else 0
+
+    loss_aversion = clamp_score(((negative_share * 0.7) + (min(downside_vol / MAX_DOWNSIDE_VOL, 1) * 0.3)) * 100)
+    time_horizon_constraint = clamp_score((1 - min(horizon_years / 20, 1)) * 100)
+
+    return {
+        "Risk Tolerance": risk_tolerance,
+        "Liquidity Need": liquidity_need,
+        "Drawdown Sensitivity": drawdown_constraint,
+        "Loss Aversion": loss_aversion,
+        "Time Horizon Constraint": time_horizon_constraint,
+        "metrics": {
+            "volatility": volatility,
+            "downside_volatility": downside_vol,
+            "max_drawdown": max_drawdown
+        }
+    }
+
 def get_db_connection():
     """Get database connection. Returns None if DATABASE_URL not available."""
     try:
@@ -4903,6 +4974,119 @@ if st.session_state.show_stock_analyzer:
                             height=400
                         )
                         st.plotly_chart(fig, use_container_width=True)
+
+                        st.markdown("### 🧭 Constraint Visualizer")
+                        st.caption("Translate observed behavior into inferred constraints using a research-inspired heuristic model.")
+
+                        with st.expander("Configure constraint assumptions", expanded=True):
+                            col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+                            with col_c1:
+                                risk_profile = st.selectbox(
+                                    "Risk Profile",
+                                    ["Conservative", "Moderate", "Aggressive"],
+                                    index=1
+                                )
+                            with col_c2:
+                                liquidity_months = st.slider(
+                                    "Liquidity Buffer (months)",
+                                    min_value=0,
+                                    max_value=12,
+                                    value=3
+                                )
+                            with col_c3:
+                                max_drawdown_pct = st.slider(
+                                    "Max Tolerable Drawdown (%)",
+                                    min_value=5,
+                                    max_value=50,
+                                    value=20
+                                )
+                            with col_c4:
+                                horizon_years = st.slider(
+                                    "Investment Horizon (years)",
+                                    min_value=1,
+                                    max_value=20,
+                                    value=7
+                                )
+
+                        constraints = infer_constraints_from_returns(
+                            analyzer.returns,
+                            risk_profile,
+                            liquidity_months,
+                            max_drawdown_pct,
+                            horizon_years
+                        )
+
+                        if constraints:
+                            scores = [
+                                constraints["Risk Tolerance"],
+                                constraints["Liquidity Need"],
+                                constraints["Drawdown Sensitivity"],
+                                constraints["Loss Aversion"],
+                                constraints["Time Horizon Constraint"]
+                            ]
+                            labels = [
+                                "Risk Tolerance",
+                                "Liquidity Need",
+                                "Drawdown Sensitivity",
+                                "Loss Aversion",
+                                "Time Horizon Constraint"
+                            ]
+
+                            render_metric_row([
+                                {
+                                    "label": "Risk Tolerance",
+                                    "value": f"{constraints['Risk Tolerance']:.0f}/100",
+                                    "kind": "goal" if constraints["Risk Tolerance"] >= 60 else "risk"
+                                },
+                                {
+                                    "label": "Liquidity Need",
+                                    "value": f"{constraints['Liquidity Need']:.0f}/100",
+                                    "kind": "risk" if constraints["Liquidity Need"] >= 60 else "analytics"
+                                },
+                                {
+                                    "label": "Drawdown Sensitivity",
+                                    "value": f"{constraints['Drawdown Sensitivity']:.0f}/100",
+                                    "kind": "risk"
+                                },
+                                {
+                                    "label": "Loss Aversion",
+                                    "value": f"{constraints['Loss Aversion']:.0f}/100",
+                                    "kind": "analytics"
+                                },
+                                {
+                                    "label": "Time Horizon Constraint",
+                                    "value": f"{constraints['Time Horizon Constraint']:.0f}/100",
+                                    "kind": "analytics"
+                                }
+                            ])
+
+                            radar_fig = go.Figure(
+                                data=[
+                                    go.Scatterpolar(
+                                        r=scores + [scores[0]],
+                                        theta=labels + [labels[0]],
+                                        fill="toself",
+                                        name="Inferred Constraints",
+                                        line=dict(color="#7c3aed", width=2)
+                                    )
+                                ]
+                            )
+                            radar_fig.update_layout(
+                                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                                showlegend=False,
+                                height=360,
+                                margin=dict(t=20, b=20, l=20, r=20)
+                            )
+                            st.plotly_chart(radar_fig, use_container_width=True)
+
+                            st.markdown("**Interpretation Guide**")
+                            st.markdown(
+                                "- Higher **Liquidity Need** and **Time Horizon Constraint** suggest short-term or cash-sensitive decisions.\n"
+                                "- High **Drawdown Sensitivity** or **Loss Aversion** implies tighter downside constraints.\n"
+                                "- **Risk Tolerance** blends declared preference with observed volatility response."
+                            )
+                        else:
+                            st.info("Not enough data to infer constraints yet. Try another symbol or wait for data to load.")
                 else:
                     st.error(error)
     
